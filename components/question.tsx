@@ -1,21 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import {
-  IconChevronLeft,
-  IconChevronRight,
-  IconClock,
-  IconCheck,
-  IconX,
-  IconRefresh,
-  IconHome,
-  IconList,
-  IconTarget,
-  IconBulb,
-  IconArrowLeft,
-} from "@tabler/icons-react";
+import { IconCheck, IconX, IconRefresh, IconBulb } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { Badge } from "./ui/badge";
@@ -32,6 +18,7 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
+import { StudyAssistantChat } from "./study-assistent-chat";
 
 export const practiceQuestionSchema = z.object({
   id: z.number(),
@@ -47,16 +34,6 @@ export const practiceQuestionSchema = z.object({
   timeLimit: z.number().optional(), // in seconds
 });
 
-function createSlug(name: string) {
-  return name.toLowerCase().replace(/\s+/g, "-");
-}
-
-function formatTime(seconds: number) {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-}
-
 export function QuestionPracticeScreen({
   question,
 }: {
@@ -66,11 +43,6 @@ export function QuestionPracticeScreen({
   const [showAnswer, setShowAnswer] = React.useState(false);
   const [isCorrect, setIsCorrect] = React.useState<boolean | null>(null);
   const [timeSpent, setTimeSpent] = React.useState(0);
-  const [chatMessages, setChatMessages] = React.useState<
-    Array<{ id: string; content: string; isUser: boolean }>
-  >([]);
-  const [chatInput, setChatInput] = React.useState("");
-  const [isLoading, setIsLoading] = React.useState(false);
 
   // Timer
   React.useEffect(() => {
@@ -80,36 +52,6 @@ export function QuestionPracticeScreen({
 
     return () => clearInterval(timer);
   }, []);
-
-  // Chat functionality
-  const handleSendMessage = async () => {
-    if (!chatInput.trim()) return;
-
-    const userMessage = {
-      id: Date.now().toString(),
-      content: chatInput,
-      isUser: true,
-    };
-
-    setChatMessages((prev) => [...prev, userMessage]);
-    setChatInput("");
-    setIsLoading(true);
-
-    // Simulate AI response (replace with actual AI integration)
-    setTimeout(() => {
-      const aiResponse = {
-        id: (Date.now() + 1).toString(),
-        content:
-          "I can help you understand this question better. What specific part would you like me to explain?",
-        isUser: false,
-      };
-      setChatMessages((prev) => [...prev, aiResponse]);
-      setIsLoading(false);
-    }, 1000);
-  };
-
-
- 
 
   const handleSubmit = () => {
     if (!selectedAnswer) return;
@@ -202,10 +144,33 @@ export function QuestionPracticeScreen({
     }
   };
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Header with timer */}
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">{question.title}</h1>
+          <div className="flex items-center gap-4">
+            <Badge variant="outline" className="text-sm">
+              Time: {formatTime(timeSpent)}
+            </Badge>
+            {question.timeLimit && (
+              <Badge variant="secondary" className="text-sm">
+                Limit: {formatTime(question.timeLimit)}
+              </Badge>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Question */}
           <div className="lg:col-span-2">
@@ -226,7 +191,6 @@ export function QuestionPracticeScreen({
                     ))}
                   </div>
                 </div>
-                {/* <CardTitle className="text-xl">{question.title}</CardTitle> */}
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Question Image */}
@@ -280,7 +244,11 @@ export function QuestionPracticeScreen({
                   <div className="space-y-4">
                     <Separator />
                     <div
-                      className={`p-4 rounded-lg ${isCorrect ? "bg-green-50 border-green-200 dark:bg-green-950" : "bg-red-50 border-red-200 dark:bg-red-950"}`}
+                      className={`p-4 rounded-lg ${
+                        isCorrect
+                          ? "bg-green-50 border-green-200 dark:bg-green-950"
+                          : "bg-red-50 border-red-200 dark:bg-red-950"
+                      }`}
                     >
                       <div className="flex items-center gap-2 mb-2">
                         {isCorrect ? (
@@ -289,7 +257,11 @@ export function QuestionPracticeScreen({
                           <IconX className="size-5 text-red-600" />
                         )}
                         <span
-                          className={`font-semibold ${isCorrect ? "text-green-800 dark:text-green-200" : "text-red-800 dark:text-red-200"}`}
+                          className={`font-semibold ${
+                            isCorrect
+                              ? "text-green-800 dark:text-green-200"
+                              : "text-red-800 dark:text-red-200"
+                          }`}
                         >
                           {isCorrect ? "Correct!" : "Incorrect"}
                         </span>
@@ -322,94 +294,14 @@ export function QuestionPracticeScreen({
             </Card>
           </div>
 
-          {/* AI Copilot Chat */}
-          <div className="space-y-6">
-            <Card className="h-[600px] flex flex-col">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <IconBulb className="size-5 text-blue-600" />
-                  AI Study Assistant
-                </CardTitle>
-                <CardDescription>
-                  Ask me anything about this question or topic
-                </CardDescription>
-              </CardHeader>
-
-              {/* Chat Messages */}
-              <CardContent className="flex-1 overflow-hidden">
-                <div className="h-full flex flex-col">
-                  <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-                    {chatMessages.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-8">
-                        <IconBulb className="size-8 mx-auto mb-2 text-blue-400" />
-                        <p>Hi! I'm your AI study assistant.</p>
-                        <p className="text-sm mt-1">
-                          Ask me anything about this question!
-                        </p>
-                      </div>
-                    ) : (
-                      chatMessages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}
-                        >
-                          <div
-                            className={`max-w-[80%] rounded-lg p-3 ${
-                              message.isUser
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            <p className="text-sm">{message.content}</p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-
-                    {isLoading && (
-                      <div className="flex justify-start">
-                        <div className="bg-muted text-muted-foreground rounded-lg p-3">
-                          <div className="flex items-center gap-2">
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
-                              <div
-                                className="w-2 h-2 bg-current rounded-full animate-bounce"
-                                style={{ animationDelay: "0.1s" }}
-                              ></div>
-                              <div
-                                className="w-2 h-2 bg-current rounded-full animate-bounce"
-                                style={{ animationDelay: "0.2s" }}
-                              ></div>
-                            </div>
-                            <span className="text-sm">Thinking...</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Chat Input */}
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Ask me about this question..."
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyPress={(e) =>
-                        e.key === "Enter" && handleSendMessage()
-                      }
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={!chatInput.trim() || isLoading}
-                      size="sm"
-                    >
-                      Send
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {/* AI Study Assistant Chat */}
+          <div>
+            <StudyAssistantChat
+              question={question}
+              userAnswer={selectedAnswer}
+              showAnswer={showAnswer}
+              isCorrect={isCorrect}
+            />
           </div>
         </div>
       </div>
