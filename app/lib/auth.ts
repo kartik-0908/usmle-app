@@ -23,7 +23,7 @@ export const auth = betterAuth({
         console.log("Magic link URL:", url);
         // send email to user
         const { data, error } = await resend.emails.send({
-          from: "Kartik <onboarding@resend.dev>",
+          from: "Kartik <no-reply@verify.stepgenie.app>",
           to: email,
           subject: "Verify your email",
           react: EmailTemplate({ link: url }),
