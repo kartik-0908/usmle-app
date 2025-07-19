@@ -1,0 +1,290 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // User's attempts and progress
+  attempts          UserAttempt[]
+  problemSets       UserProblemSet[]
+  name              String
+  emailVerified     Boolean
+  image             String?
+  sessions          Session[]
+  accounts          Account[]
+  UserTopicProgress UserTopicProgress[]
+
+  @@map("users")
+}
+
+model Topic {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relationships
+  subtopics         Subtopic[]
+  questionTopics    QuestionTopic[]
+  UserTopicProgress UserTopicProgress[]
+
+  @@map("topics")
+}
+
+model Subtopic {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign key
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  questionSubtopics QuestionSubtopic[]
+
+  @@unique([topicId, name])
+  @@map("subtopics")
+}
+
+model Question {
+  id           String       @id @default(cuid())
+  title        String
+  questionText String       @db.Text
+  explanation  String?      @db.Text
+  difficulty   Difficulty   @default(MEDIUM)
+  questionType QuestionType @default(MULTIPLE_CHOICE)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Relationships
+  options             Option[]
+  questionTopics      QuestionTopic[]
+  questionSubtopics   QuestionSubtopic[]
+  attempts            UserAttempt[]
+  problemSetQuestions ProblemSetQuestion[]
+
+  @@map("questions")
+}
+
+model Option {
+  id         String   @id @default(cuid())
+  text       String   @db.Text
+  isCorrect  Boolean  @default(false)
+  order      Int      @default(0)
+  // Foreign key
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("options")
+}
+
+// Junction table for Question-Topic many-to-many relationship
+
+model QuestionTopic {
+  questionId String
+  topicId    String
+  createdAt  DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  topic    Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, topicId])
+  @@map("question_topics")
+}
+
+// Junction table for Question-Subtopic many-to-many relationship
+
+model QuestionSubtopic {
+  questionId String
+  subtopicId String
+  createdAt  DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  subtopic Subtopic @relation(fields: [subtopicId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, subtopicId])
+  @@map("question_subtopics")
+}
+
+model ProblemSet {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  questions       ProblemSetQuestion[]
+  userProblemSets UserProblemSet[]
+
+  @@map("problem_sets")
+}
+
+// Junction table for ProblemSet-Question many-to-many relationship
+
+model ProblemSetQuestion {
+  problemSetId String
+  questionId   String
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  problemSet ProblemSet @relation(fields: [problemSetId], references: [id], onDelete: Cascade)
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([problemSetId, questionId])
+  @@map("problem_set_questions")
+}
+
+model UserAttempt {
+  id              String   @id @default(cuid())
+  selectedOptions String[] // Array of selected option IDs
+  isCorrect       Boolean
+  timeSpent       Int? // Time spent in seconds
+  attemptedAt     DateTime @default(now())
+
+  // Foreign keys
+  userId     String
+  questionId String
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("user_attempts")
+}
+
+model UserProblemSet {
+  id             String           @id @default(cuid())
+  status         ProblemSetStatus @default(NOT_STARTED)
+  score          Int? // Score out of total questions
+  totalQuestions Int?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  // Foreign keys
+  userId       String
+  problemSetId String
+
+  problemSet ProblemSet @relation(fields: [problemSetId], references: [id], onDelete: Cascade)
+  User       User       @relation(fields: [userId], references: [id])
+
+  @@unique([userId, problemSetId])
+  @@map("user_problem_sets")
+}
+
+model UserTopicProgress {
+  id                 String    @id @default(cuid())
+  userId             String
+  topicId            String
+  questionsAttempted Int       @default(0)
+  questionsCorrect   Int       @default(0)
+  totalTimeSpent     Int       @default(0) // in seconds
+  lastPracticedAt    DateTime?
+  streak             Int       @default(0) // Current streak
+  bestStreak         Int       @default(0) // Best streak ever
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relationships
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topicId])
+  @@map("user_topic_progress")
+}
+
+// Enums
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  FILL_IN_BLANK
+  MULTIPLE_SELECT
+}
+
+enum ProblemSetStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  PAUSED
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
+}
