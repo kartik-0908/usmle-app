@@ -6,9 +6,9 @@ import prisma from "@/lib/db";
 export default async function SubtopicQuestionsPage({
   params,
 }: {
-  params: { topic: string; subtopic: string };
+  params: Promise<{ topic: string; subtopic: string }>;
 }) {
-  const { topic, subtopic } =  params;
+  const { topic, subtopic } = await params;
   const topicName = await getTopicNameFromSlug(topic);
   const subtopicName = await getSubTopicNameFromSlug(subtopic);
 
