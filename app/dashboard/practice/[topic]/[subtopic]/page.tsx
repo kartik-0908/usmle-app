@@ -8,7 +8,7 @@ export default async function SubtopicQuestionsPage({
 }: {
   params: { topic: string; subtopic: string };
 }) {
-  const { topic, subtopic } = await params;
+  const { topic, subtopic } =  params;
   const topicName = await getTopicNameFromSlug(topic);
   const subtopicName = await getSubTopicNameFromSlug(subtopic);
 
