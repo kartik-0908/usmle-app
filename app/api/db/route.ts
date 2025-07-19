@@ -356,7 +356,7 @@ import { Question, Subtopic, Topic } from "@/app/generated/prisma";
 
 const azure = createAzure({
   resourceName: 'makai-azurespon', // Azure resource name
-  apiKey: 'c013945bae504f1d910f4a82d6396aec',
+  apiKey: process.env.AZURE_API_KEY, // Your Azure API key
 });
 
 // Schema for LLM response validation
