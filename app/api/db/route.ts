@@ -247,7 +247,7 @@ async function createQuestionWithOptions(questionData: any) {
 async function importQuestions() {
   try {
     // Get the file path from command line arguments
-    const filePath = '/Users/kartik/projects/usmle/public/US/dev.jsonl';
+    const filePath = '/Users/kartik/projects/usmle/public/US/US_qbank.jsonl';
     
     if (!filePath) {
       console.error('Please provide the path to your JSONL file');
@@ -509,7 +509,7 @@ async function categorizeQuestions(): Promise<void> {
   try {
     // Parse command line arguments
     const args: string[] = process.argv.slice(2);
-    const maxQuestions: number = parseInt(args[0]) || 1000;
+    const maxQuestions: number = parseInt(args[0]) || 10000;
     const minConfidence: number = parseFloat(args[1]) || 0.5;
     const batchSize: number = parseInt(args[2]) || 10;
 

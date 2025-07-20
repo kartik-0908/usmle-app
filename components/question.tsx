@@ -19,6 +19,7 @@ import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
 import { StudyAssistantChat } from "./study-assistent-chat";
+import VoiceAgent from "./voice";
 
 export const practiceQuestionSchema = z.object({
   id: z.number(),
@@ -155,7 +156,7 @@ export function QuestionPracticeScreen({
       {/* Header with timer */}
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{question.title}</h1>
+          {/* <h1 className="text-2xl font-bold">{question.title}</h1> */}
           <div className="flex items-center gap-4">
             <Badge variant="outline" className="text-sm">
               Time: {formatTime(timeSpent)}
@@ -302,6 +303,9 @@ export function QuestionPracticeScreen({
               showAnswer={showAnswer}
               isCorrect={isCorrect}
             />
+          </div>
+          <div>
+            <VoiceAgent/>
           </div>
         </div>
       </div>

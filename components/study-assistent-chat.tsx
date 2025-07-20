@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { IconBulb, IconSend } from "@tabler/icons-react";
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
 import { z } from "zod";
 
 import { Button } from "./ui/button";
@@ -80,7 +80,7 @@ export function StudyAssistantChat({
 
   return (
     <Card className={`h-[600px] flex flex-col ${className}`}>
-      <CardHeader>
+      {/* <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <IconBulb className="size-5 text-blue-600" />
           AI Study Assistant
@@ -88,7 +88,7 @@ export function StudyAssistantChat({
         <CardDescription>
           Ask me anything about this question or topic
         </CardDescription>
-      </CardHeader>
+      </CardHeader> */}
 
       <CardContent className="flex-1 overflow-hidden p-0">
         <div className="h-full flex flex-col">
