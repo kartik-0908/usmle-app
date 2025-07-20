@@ -20,6 +20,8 @@ import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
 import { StudyAssistantChat } from "./study-assistent-chat";
 import VoiceAgent from "./voice";
+import DeepgramVoiceAgent from "./deepgram";
+import RealtimeVoiceAgent from "@/app/dashboard/openai/page";
 
 export const practiceQuestionSchema = z.object({
   id: z.number(),
@@ -305,7 +307,7 @@ export function QuestionPracticeScreen({
             />
           </div>
           <div>
-            <VoiceAgent/>
+           <RealtimeVoiceAgent/>
           </div>
         </div>
       </div>
