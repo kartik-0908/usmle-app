@@ -10,9 +10,7 @@ import { Button } from "./ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "./ui/card";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
@@ -43,6 +41,28 @@ interface StudyAssistantChatProps {
   className?: string;
 }
 
+// Cookie utilities
+const VOICE_MODE_COOKIE = 'sg-voice-mode';
+
+const setCookie = (name: string, value: string, days: number = 30) => {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+};
+
+const getCookie = (name: string): string | null => {
+  if (typeof document === 'undefined') return null;
+  
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+};
+
 export function StudyAssistantChat({
   question,
   userAnswer,
@@ -50,7 +70,29 @@ export function StudyAssistantChat({
   isCorrect,
   className,
 }: StudyAssistantChatProps) {
+  // Initialize voice mode from cookie, default to true
   const [isVoiceMode, setIsVoiceMode] = React.useState(true);
+  const [isInitialized, setIsInitialized] = React.useState(false);
+
+  // Load voice mode preference from cookie on component mount
+  React.useEffect(() => {
+    const savedVoiceMode = getCookie(VOICE_MODE_COOKIE);
+    if (savedVoiceMode !== null) {
+      setIsVoiceMode(savedVoiceMode === 'true');
+    }
+    setIsInitialized(true);
+  }, []);
+
+  // Save voice mode preference to cookie whenever it changes
+  React.useEffect(() => {
+    if (isInitialized) {
+      setCookie(VOICE_MODE_COOKIE, isVoiceMode.toString());
+    }
+  }, [isVoiceMode, isInitialized]);
+
+  const handleVoiceModeToggle = (checked: boolean) => {
+    setIsVoiceMode(checked);
+  };
 
   const { messages, input, handleInputChange, handleSubmit, isLoading, error, append } =
     useChat({
@@ -78,6 +120,20 @@ export function StudyAssistantChat({
       },
     });
 
+  // Don't render until we've loaded the cookie preference
+  if (!isInitialized) {
+    return (
+      <Card className={`h-[600px] flex flex-col ${className}`}>
+        <CardContent className="flex-1 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <p>Loading...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className={`h-[600px] flex flex-col ${className}`}>
       {/* Header with Mode Toggle */}
@@ -96,7 +152,7 @@ export function StudyAssistantChat({
             <Switch
               id="voice-toggle"
               checked={isVoiceMode}
-              onCheckedChange={setIsVoiceMode}
+              onCheckedChange={handleVoiceModeToggle}
             />
             <Label 
               htmlFor="voice-toggle" 
