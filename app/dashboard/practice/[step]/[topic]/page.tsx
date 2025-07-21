@@ -4,8 +4,9 @@ import { PracticeSubTopicsTable } from "@/components/practice-subtopics-table";
 export default async function PracticePage({
   params,
 }: {
-  params: Promise<{ topic: string }>;
+  params: Promise<{ step: string,topic: string }>;
 }) {
+  const { step } = await params;
   const { topic } = await params;
   const topicName = await getTopicNameFromSlug(topic);
 

@@ -16,11 +16,11 @@ export async function getSteps(): Promise<StepWithProgress[]> {
       where: {
         isActive: true,
       },
-      select:{
+      select: {
         id: true,
         name: true,
         slug: true,
-        description: true
+        description: true,
       },
       orderBy: {
         order: "asc",
@@ -262,6 +262,14 @@ export async function getSubtopicData(topicSlug: string) {
       topic: {
         slug: topicSlug,
       },
+      questionSubtopics: {
+        some: {
+          question: {
+            isActive: true,
+          },
+        },
+      },
+
       isActive: true,
     },
     include: {

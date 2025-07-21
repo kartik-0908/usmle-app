@@ -18,12 +18,94 @@ Question Details:
 - Tags/Topics: ${questionContext.tags?.join(", ")}
 - Options: ${questionContext.options?.join(", ") || "N/A"}
 
-${questionContext.showAnswer ? `
-Student's Answer: ${questionContext.userAnswer || "No answer provided"}
 Correct Answer: ${questionContext.explanation}
 Result: ${questionContext.isCorrect ? "Correct" : "Incorrect"}
 Explanation: ${questionContext.explanation}
-` : ""}
+
+You are  provided with the correct answer and its clinical/scientific explanation for a USMLE question.
+ Your task is to simplify the conceptual approach and break it down into small, logical steps.
+ Reveal each step one at a time, actively engaging the user by asking them what they think the next step is. This way, the learning process becomes interactive and helps reinforce their understanding.
+
+Step 1: What’s happening to the patient right now?
+He presented with signs of an acute STEMI (ST elevations in V2–V4 = anteroseptal infarct).
+
+
+After receiving nitroglycerin, he crashes:
+ ↓ BP (82/54 mmHg), ↑ HR (120 bpm), cold/clammy → hemodynamic collapse/shock.
+
+
+
+Step 2: What type of shock is this?
+In the setting of an MI + hypotension + signs of poor perfusion (clammy, tachycardia), think cardiogenic shock.
+
+
+But this might also be nitrate-induced hypotension due to venodilation → reduced preload.
+
+
+
+Step 3: First-line response to this scenario?
+In a hypotensive patient, the priority is to restore perfusion:
+
+
+Rule out fluid-responsive causes (e.g., nitro-induced hypotension or underfilled RV).
+
+
+Give a normal saline bolus (Option C) first to increase preload and raise BP.
+
+
+
+Step 4: When do we consider inotropes like dopamine?
+Only after fluids fail and the patient is still in cardiogenic shock (e.g., persistent hypotension, low cardiac output signs like altered mental status or oliguria).
+
+
+
+Step 5: Why not dopamine first?
+It has dose-dependent effects:
+
+
+Low: dopaminergic (renal perfusion – mostly irrelevant here)
+
+
+Medium: β1 → increases heart rate and contractility
+
+
+High: α1 → vasoconstriction
+
+
+Sounds good on paper… but here’s the catch:
+
+
+↑ HR = ↑ myocardial oxygen demand → bad for ischemic myocardium!
+
+
+Risk of tachyarrhythmias – especially dangerous in someone post-MI
+
+
+Evidence shows dopamine is associated with worse outcomes (↑ mortality, ↑ arrhythmias) vs. alternatives.
+
+
+
+Step 6: What would be better than dopamine?
+If you need pressors after fluid bolus:
+
+
+Dobutamine → inotrope with less tachycardia
+
+
+Norepinephrine → vasopressor that preserves perfusion pressure without jacking up heart rate as much
+
+
+
+Step 7: Bottom line?
+Too early and too risky to start dopamine.
+
+
+First, try fluids (Option C). If that fails, choose safer inotropes/pressors.
+
+
+Dopamine = Plan C, not Plan A.
+
+
 
 Your role:
 1. Help the student understand the question and related concepts
@@ -41,8 +123,10 @@ Guidelines:
 - Ask follow-up questions to check understanding
 - If they got it wrong, help them understand why and learn from the mistake`;
 
+console.log("System Prompt for Study Assistant:", systemPrompt);
+
     const result = await streamText({
-      model: azure('o1'),
+      model: azure('gpt-4.1'),
       system: systemPrompt,
       messages,
       maxTokens: 500,

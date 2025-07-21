@@ -19,9 +19,6 @@ import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
 import { StudyAssistantChat } from "./study-assistant-chat";
-import VoiceAgent from "./voice";
-import DeepgramVoiceAgent from "./deepgram";
-import RealtimeVoiceAgent from "@/app/dashboard/openai/page";
 
 export const practiceQuestionSchema = z.object({
   id: z.number(),
@@ -32,6 +29,7 @@ export const practiceQuestionSchema = z.object({
   options: z.array(z.string()).optional(),
   correctAnswer: z.string(),
   explanation: z.string(),
+
   tags: z.array(z.string()),
   image: z.string().optional(),
   timeLimit: z.number().optional(), // in seconds

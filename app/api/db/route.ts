@@ -3,12 +3,13 @@ import prisma from "@/lib/db";
 export async function GET(request: Request) {
   try {
     console.log("categorizing questions ...");
-    // await saveExaplanation();
-    await prisma.question.updateMany({
-      data:{
-        isActive: false
-      }
-    })
+    await saveExaplanation();
+    // await prisma.question.updateMany({
+    //   data:{
+    //     isActive: false
+    //   }
+    // })
+   
     return new Response("categorizing questions saved", {
       status: 200,
     });
@@ -73,7 +74,7 @@ In an acute MI patient who develops hypotension and shock signs after initial tr
 
   `;
 
-  console.log("Prompt for O1:", prompt);
+  // console.log("Prompt for O1:", prompt);
 
   try {
     const result = await generateText({
@@ -91,7 +92,7 @@ In an acute MI patient who develops hypotension and shock signs after initial tr
 async function saveExaplanation() {
   let count = 0;
   try {
-    while (count < 2) {
+    while (count < 5) {
       console.log("count", count);
       const question = await prisma.question.findFirst({
         where: {
@@ -110,7 +111,8 @@ async function saveExaplanation() {
           id: question?.id || "",
         },
         data:{
-          o1answer: explaination,
+          explanation: explaination,
+          isActive: true
         }
       })
       count++;

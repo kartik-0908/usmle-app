@@ -4,6 +4,7 @@ import * as React from "react";
 import { IconBulb, IconSend, IconMicrophone, IconKeyboard } from "@tabler/icons-react";
 import { useChat } from "@ai-sdk/react";
 import { z } from "zod";
+import Markdown from 'react-markdown'
 
 import { Button } from "./ui/button";
 import {
@@ -69,7 +70,7 @@ export function StudyAssistantChat({
           question: question.question,
           options: question.options,
           tags: question.tags,
-          explanation: question.explanation,
+          explanation: question,
           userAnswer,
           showAnswer,
           isCorrect,
@@ -80,14 +81,9 @@ export function StudyAssistantChat({
   return (
     <Card className={`h-[600px] flex flex-col ${className}`}>
       {/* Header with Mode Toggle */}
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div>
-            <CardDescription>
-              Ask me anything about this {question.type.toLowerCase()} question
-            </CardDescription>
-          </div>
-          
+     
           {/* Mode Toggle */}
           <div className="flex items-center space-x-2">
             <Label 
@@ -113,83 +109,88 @@ export function StudyAssistantChat({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-hidden p-0">
-        <div className="h-full flex flex-col">
-          {/* Chat Messages */}
-         {!isVoiceMode &&  <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
-              {messages.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  <IconBulb className="size-8 mx-auto mb-2 text-blue-400" />
-                  <p>Hi! I'm your AI study assistant.</p>
-                  <p className="text-sm mt-1">
-                    Ask me anything about this question!
-                  </p>
-                  <div className="mt-4 p-3 bg-muted/50 rounded-lg text-xs">
-                    <p className="font-medium mb-1">Current mode: {isVoiceMode ? 'Voice' : 'Text'}</p>
-                    <p>Switch between text and voice input using the toggle above</p>
-                  </div>
-                </div>
-              ) : (
-                !isVoiceMode && messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[85%] rounded-lg p-3 ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground"
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap">
-                        {message.content}
+      <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
+        {/* Chat Messages */}
+        {isVoiceMode ? (
+          // Voice Mode - Show RealtimeVoiceAgent
+          <div className="flex-1 flex flex-col">
+            <RealtimeVoiceAgent />
+          </div>
+        ) : (
+          // Text Mode - Show Chat Interface
+          <>
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="p-4">
+                <div className="space-y-4">
+                  {messages.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">
+                      <IconBulb className="size-8 mx-auto mb-2 text-blue-400" />
+                      <p>Hi! I'm your AI study assistant.</p>
+                      <p className="text-sm mt-1">
+                        Ask me anything about this question!
                       </p>
-                    </div>
-                  </div>
-                ))
-              )}
-
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted text-muted-foreground rounded-lg p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
-                        <div
-                          className="w-2 h-2 bg-current rounded-full animate-bounce"
-                          style={{ animationDelay: "0.1s" }}
-                        ></div>
-                        <div
-                          className="w-2 h-2 bg-current rounded-full animate-bounce"
-                          style={{ animationDelay: "0.2s" }}
-                        ></div>
+                      <div className="mt-4 p-3 bg-muted/50 rounded-lg text-xs">
+                        <p className="font-medium mb-1">Current mode: {isVoiceMode ? 'Voice' : 'Text'}</p>
+                        <p>Switch between text and voice input using the toggle above</p>
                       </div>
-                      <span className="text-sm">Thinking...</span>
                     </div>
-                  </div>
-                </div>
-              )}
+                  ) : (
+                    messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${
+                          message.role === "user" ? "justify-end" : "justify-start"
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[85%] rounded-lg p-3 ${
+                            message.role === "user"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-foreground"
+                          }`}
+                        >
+                          <div className="text-sm whitespace-pre-wrap">
+                            <Markdown>{message.content}</Markdown>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
 
-              {error && (
-                <div className="flex justify-center">
-                  <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
-                    Sorry, I encountered an error. Please try again.
-                  </div>
-                </div>
-              )}
-            </div>
-          </ScrollArea>}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-muted text-muted-foreground rounded-lg p-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
+                            <div
+                              className="w-2 h-2 bg-current rounded-full animate-bounce"
+                              style={{ animationDelay: "0.1s" }}
+                            ></div>
+                            <div
+                              className="w-2 h-2 bg-current rounded-full animate-bounce"
+                              style={{ animationDelay: "0.2s" }}
+                            ></div>
+                          </div>
+                          <span className="text-sm">Thinking...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-          {/* Conditional Input Area */}
-          {isVoiceMode ? (
-           <RealtimeVoiceAgent/>
-          ) : (
-            /* Text Chat Input */
-            <div className="p-4 border-t">
+                  {error && (
+                    <div className="flex justify-center">
+                      <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+                        Sorry, I encountered an error. Please try again.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </ScrollArea>
+
+            {/* Text Chat Input */}
+            <div className="flex-shrink-0 p-4 border-t">
               <form onSubmit={handleSubmit} className="flex gap-2">
                 <Input
                   value={input}
@@ -207,8 +208,8 @@ export function StudyAssistantChat({
                 </Button>
               </form>
             </div>
-          )}
-        </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

@@ -201,7 +201,7 @@ const columns: ColumnDef<z.infer<typeof subTopicSchema>>[] = [
 
       return (
         <div className="flex items-center gap-2">
-          <Link href={`/dashboard/practice/${topicSlug}/${subtopicSlug}`}>
+          <Link href={`/dashboard/practice/step-1/${topicSlug}/${subtopicSlug}`}>
             <Button size="sm" variant="default">
               Practice
             </Button>
