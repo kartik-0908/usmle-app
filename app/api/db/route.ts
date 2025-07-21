@@ -3,7 +3,12 @@ import prisma from "@/lib/db";
 export async function GET(request: Request) {
   try {
     console.log("categorizing questions ...");
-    await saveExaplanation();
+    // await saveExaplanation();
+    await prisma.question.updateMany({
+      data:{
+        isActive: false
+      }
+    })
     return new Response("categorizing questions saved", {
       status: 200,
     });
