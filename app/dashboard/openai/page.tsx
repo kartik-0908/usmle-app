@@ -11,7 +11,7 @@ const RealtimeVoiceAgent = ({
   explanation,
 }: {
   question: string;
-  options?: string[];
+  options: string[];
   explanation: string;
 }) => {
   const [isConnected, setIsConnected] = useState(false);

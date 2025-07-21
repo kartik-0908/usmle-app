@@ -171,9 +171,9 @@ export function StudyAssistantChat({
           // Voice Mode - Show RealtimeVoiceAgent
           <div className="flex-1 flex flex-col">
             <RealtimeVoiceAgent
-            question={question.question}
-            options={question.options}
-            explanation={question.explanation}
+            question={question.question || ''}
+            options={question.options || []}
+            explanation={question.explanation || ''}
             />
           </div>
         ) : (
