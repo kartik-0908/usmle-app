@@ -16,7 +16,7 @@ import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
-import RealtimeVoiceAgent from "@/app/dashboard/openai/page";
+import RealtimeVoiceAgent from "./voice";
 
 // Question schema for context
 export const practiceQuestionSchema = z.object({
