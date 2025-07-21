@@ -11,3 +11,10 @@ export interface TopicWithProgress {
   lastPracticedAt: Date | null;
   streak: number;
 }
+
+export interface StepWithProgress {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+}

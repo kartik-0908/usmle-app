@@ -20,7 +20,9 @@ import { useEffect, useState } from "react";
 import { TopicWithProgress } from "@/lib/types/topic";
 import { getTopicsWithProgress } from "@/app/actions/topics";
 
-export function SectionCards() {
+export function TopicCards({step}:{
+  step: string;
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [topics, setTopics] = useState<TopicWithProgress[]>([]);
   const [loading, setLoading] = useState(true);

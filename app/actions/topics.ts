@@ -1,8 +1,38 @@
 "use server";
 import prisma from "@/lib/db";
-import { TopicWithProgress } from "@/lib/types/topic";
+import { StepWithProgress, TopicWithProgress } from "@/lib/types/topic";
 import { headers } from "next/headers";
 import { auth } from "../lib/auth";
+
+export async function getSteps(): Promise<StepWithProgress[]> {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  console.log("Session in getStepsWithProgress:", session);
+  const userId = session?.user?.id;
+  try {
+    // Fetch all active topics with their progress
+    const steps = await prisma.step.findMany({
+      where: {
+        isActive: true,
+      },
+      select:{
+        id: true,
+        name: true,
+        slug: true,
+        description: true
+      },
+      orderBy: {
+        order: "asc",
+      },
+    });
+
+    return steps;
+  } catch (error) {
+    console.error("Error fetching topics with progress:", error);
+    throw new Error("Failed to fetch topics");
+  }
+}
 
 export async function getTopicsWithProgress(): Promise<TopicWithProgress[]> {
   const session = await auth.api.getSession({
@@ -461,7 +491,7 @@ export async function getQuestionsForSubtopic(subtopicId: string) {
     return {
       id: question.id, // Create numeric ID from cuid
       title: question.title,
-      type: 'MCQ',
+      type: "MCQ",
       difficulty: getDifficultyDisplay(question.difficulty),
       status,
       lastAttempted: getRelativeTime(lastAttemptedDate),

@@ -150,10 +150,10 @@ const RealtimeVoiceAgent = () => {
     }
   };
 
-  const getConnectionButtonColor = () => {
-    if (isConnected) return "bg-red-500 hover:bg-red-600";
-    return "bg-green-500 hover:bg-green-600";
-  };
+  // const getConnectionButtonColor = () => {
+  //   if (isConnected) return "bg-red-500 hover:bg-red-600";
+  //   return "bg-green-500 hover:bg-green-600";
+  // };
 
   return (
     <div className="w-full h-full mx-auto p-6 bg-red rounded-lg shadow-lg">

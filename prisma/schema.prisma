@@ -31,8 +31,27 @@ model User {
   sessions          Session[]
   accounts          Account[]
   UserTopicProgress UserTopicProgress[]
+  UserStepProgress  UserStepProgress[]
 
   @@map("users")
+}
+
+model Step {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  stepNumber  Int      @unique
+  description String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  // Relationships
+  topics           Topic[]
+  UserStepProgress UserStepProgress[]
+
+  @@map("steps")
 }
 
 model Topic {
@@ -44,11 +63,16 @@ model Topic {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
+  // Foreign key to Step
+  stepId String
+  step   Step   @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
   // Relationships
   subtopics         Subtopic[]
   questionTopics    QuestionTopic[]
   UserTopicProgress UserTopicProgress[]
 
+  @@unique([stepId, name])
   @@map("topics")
 }
 
@@ -77,6 +101,7 @@ model Question {
   title        String
   questionText String       @db.Text
   explanation  String?      @db.Text
+  o1answer     String? 
   difficulty   Difficulty   @default(MEDIUM)
   questionType QuestionType @default(MULTIPLE_CHOICE)
   isActive     Boolean      @default(true)
@@ -220,6 +245,29 @@ model UserTopicProgress {
 
   @@unique([userId, topicId])
   @@map("user_topic_progress")
+}
+
+model UserStepProgress {
+  id                 String    @id @default(cuid())
+  userId             String
+  stepId             String
+  questionsAttempted Int       @default(0)
+  questionsCorrect   Int       @default(0)
+  totalTimeSpent     Int       @default(0) // in seconds
+  lastPracticedAt    DateTime?
+  streak             Int       @default(0) // Current streak
+  bestStreak         Int       @default(0) // Best streak ever
+  isCompleted        Boolean   @default(false)
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  step Step @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stepId])
+  @@map("user_step_progress")
 }
 
 // Enums
