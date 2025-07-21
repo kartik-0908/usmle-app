@@ -18,7 +18,7 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
-import { StudyAssistantChat } from "./study-assistent-chat";
+import { StudyAssistantChat } from "./study-assistant-chat";
 import VoiceAgent from "./voice";
 import DeepgramVoiceAgent from "./deepgram";
 import RealtimeVoiceAgent from "@/app/dashboard/openai/page";
@@ -305,9 +305,6 @@ export function QuestionPracticeScreen({
               showAnswer={showAnswer}
               isCorrect={isCorrect}
             />
-          </div>
-          <div>
-           <RealtimeVoiceAgent/>
           </div>
         </div>
       </div>
