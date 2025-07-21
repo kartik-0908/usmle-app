@@ -170,7 +170,11 @@ export function StudyAssistantChat({
         {isVoiceMode ? (
           // Voice Mode - Show RealtimeVoiceAgent
           <div className="flex-1 flex flex-col">
-            <RealtimeVoiceAgent />
+            <RealtimeVoiceAgent
+            question={question.question}
+            options={question.options}
+            explanation={question.explanation}
+            />
           </div>
         ) : (
           // Text Mode - Show Chat Interface
