@@ -19,6 +19,9 @@ import {
   IconUsers,
   IconHome,
   IconPencil,
+  IconGraph,
+  IconGenderFemale,
+  IconBrandLine,
 } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -37,64 +40,25 @@ import {
 const data = {
   navMain: [
     {
-      title: "Home",
-      url: "/dashboard/home",
-      icon: IconHome,
-    },
-    {
       title: "Practice",
       url: "/dashboard/practice",
       icon: IconPencil,
+      isComingSoon: false,
     },
+    {
+      title: "Analytics",
+      url: "/dashboard/analytics",
+      icon: IconGraph,
+      isComingSoon: true,
+    },
+    {
+      title:'Mock Interview',
+      url: '#',
+      icon:IconBrandLine,
+      isComingSoon: true
+    }
   ],
-  navClouds: [
-    {
-      title: "Capture",
-      icon: IconCamera,
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: IconFileDescription,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: IconFileAi,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-  ],
+
   navSecondary: [
     {
       title: "Settings",
@@ -107,27 +71,9 @@ const data = {
       icon: IconHelp,
     },
   ],
-  documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
-    },
-  ],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -147,11 +93,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {/* <NavDocuments items={data.documents} /> */}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser  />
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
   );

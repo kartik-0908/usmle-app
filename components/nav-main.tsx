@@ -18,6 +18,7 @@ export function NavMain({
     title: string;
     url: string;
     icon?: Icon;
+    isComingSoon?: boolean;
   }[];
 }) {
   return (
@@ -26,11 +27,23 @@ export function NavMain({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                <Link className="flex items-center gap-2" href={item.url}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                </Link>
+              <SidebarMenuButton 
+                tooltip={item.isComingSoon ? `${item.title} - Coming Soon` : item.title}
+                disabled={item.isComingSoon}
+                className={item.isComingSoon ? "opacity-50 cursor-not-allowed" : ""}
+              >
+                {item.isComingSoon ? (
+                  <div className="flex items-center gap-2 w-full">
+                    {item.icon && <item.icon className="opacity-50" />}
+                    <span className="opacity-50">{item.title}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
+                  </div>
+                ) : (
+                  <Link className="flex items-center gap-2 w-full" href={item.url}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </Link>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

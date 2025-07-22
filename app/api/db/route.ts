@@ -3,7 +3,7 @@ import prisma from "@/lib/db";
 export async function GET(request: Request) {
   try {
     console.log("categorizing questions ...");
-    saveExaplanation();
+    await saveExaplanation();
     // categorizeQuestions()
     // importQuestions();
     // await prisma.question.deleteMany()
