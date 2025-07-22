@@ -25,7 +25,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { authClient } from "@/app/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 
 export function NavUser() {
   const {
@@ -41,6 +41,7 @@ export function NavUser() {
     return null;
   }
   if(!session){
+    redirect('/sign-in')
     
   }
   const user = {
