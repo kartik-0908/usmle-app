@@ -3,7 +3,10 @@ import prisma from "@/lib/db";
 export async function GET(request: Request) {
   try {
     console.log("categorizing questions ...");
-    await saveExaplanation();
+    saveExaplanation();
+    // categorizeQuestions()
+    // importQuestions();
+    // await prisma.question.deleteMany()
     // await prisma.question.updateMany({
     //   data:{
     //     isActive: false
@@ -722,7 +725,8 @@ function getDifficulty(metaInfo: string) {
 
 // Function to create question with options
 async function createQuestionWithOptions(questionData: any) {
-  const { question, answer, options, meta_info, answer_idx } = questionData;
+  const { question, answer, options, meta_info } = questionData;
+  
 
   return await prisma.$transaction(async (tx: any) => {
     // Create the question
@@ -731,19 +735,20 @@ async function createQuestionWithOptions(questionData: any) {
         title:
           question.substring(0, 100) + (question.length > 100 ? "..." : ""),
         questionText: question,
-        explanation: `Correct answer: ${answer}`, // Store the correct answer text as explanation
+        // explanation: `Correct answer: ${answer}`, // Store the correct answer text as explanation
         difficulty: getDifficulty(meta_info),
         questionType: "MULTIPLE_CHOICE",
-        isActive: true,
+        isActive: false,
       },
     });
 
     // Create options
     const optionPromises = Object.entries(options).map(([key, text], index) =>
+      
       tx.option.create({
         data: {
           text: text,
-          isCorrect: key === answer_idx,
+          isCorrect: key === answer,
           order: index,
           questionId: createdQuestion.id,
         },

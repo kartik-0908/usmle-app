@@ -70,66 +70,21 @@ export function QuestionPracticeScreen({
   };
 
   const renderQuestionInput = () => {
-    switch (question.type) {
-      case "MCQ":
-        return (
-          <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
-            {question.options?.map((option, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <RadioGroupItem value={option} id={`option-${index}`} />
-                <Label
-                  htmlFor={`option-${index}`}
-                  className="flex-1 cursor-pointer"
-                >
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        );
-
-      case "True/False":
-        return (
-          <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="True" id="true" />
-              <Label htmlFor="true" className="cursor-pointer">
-                True
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="False" id="false" />
-              <Label htmlFor="false" className="cursor-pointer">
-                False
-              </Label>
-            </div>
-          </RadioGroup>
-        );
-
-      case "Fill in the blank":
-        return (
-          <Input
-            placeholder="Enter your answer..."
-            value={selectedAnswer}
-            onChange={(e) => setSelectedAnswer(e.target.value)}
-            className="max-w-md"
-          />
-        );
-
-      case "Short Answer":
-        return (
-          <Textarea
-            placeholder="Enter your answer..."
-            value={selectedAnswer}
-            onChange={(e) => setSelectedAnswer(e.target.value)}
-            className="max-w-2xl"
-            rows={4}
-          />
-        );
-
-      default:
-        return null;
-    }
+    return (
+      <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
+        {question.options?.map((option, index) => (
+          <div key={index} className="flex items-center space-x-2">
+            <RadioGroupItem value={option} id={`option-${index}`} />
+            <Label
+              htmlFor={`option-${index}`}
+              className="flex-1 cursor-pointer"
+            >
+              {option}
+            </Label>
+          </div>
+        ))}
+      </RadioGroup>
+    );
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -278,7 +233,7 @@ export function QuestionPracticeScreen({
                     </div>
 
                     {/* Explanation */}
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-950">
+                    {/* <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-950">
                       <div className="flex items-center gap-2 mb-2">
                         <IconBulb className="size-5 text-blue-600" />
                         <span className="font-semibold text-blue-800 dark:text-blue-200">
@@ -288,7 +243,7 @@ export function QuestionPracticeScreen({
                       <p className="text-sm text-blue-700 dark:text-blue-300">
                         {question.explanation}
                       </p>
-                    </div>
+                    </div> */}
                   </div>
                 )}
               </CardContent>

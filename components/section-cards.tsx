@@ -120,7 +120,7 @@ export function TopicCards({step}:{
           filteredTopics.map((topic) => (
             <Link
               key={topic.id}
-              href={`/dashboard/practice/step-1/${topic.slug}`}
+              href={`/dashboard/practice/${step}/${topic.slug}`}
               className="group"
             >
               <Card className="@container/card h-48 cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] bg-gradient-to-t from-primary/5 to-card dark:bg-card shadow-xs flex flex-col">

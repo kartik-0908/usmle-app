@@ -221,6 +221,7 @@ const columns: ColumnDef<z.infer<typeof questionSchema>>[] = [
     header: "Actions",
     cell: ({ row }) => {
       const params = useParams();
+      const step = params.step as string;
       const topicSlug = params.topic as string;
       const subtopicSlug = params.subtopic as string;
       const questionId = row.original.id;
@@ -228,7 +229,7 @@ const columns: ColumnDef<z.infer<typeof questionSchema>>[] = [
       return (
         <div className="flex items-center gap-2">
           <Link
-            href={`/dashboard/practice/step-1/${topicSlug}/${subtopicSlug}/question/${questionId}`}
+            href={`/dashboard/practice/${step}/${topicSlug}/${subtopicSlug}/question/${questionId}`}
           >
             <Button size="sm" variant="default">
               Practice

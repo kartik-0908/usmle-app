@@ -1,14 +1,18 @@
 import { PracticeQuestionsTable } from "@/components/question-table";
 import { notFound } from "next/navigation";
-import { getQuestionsForSubtopic, getSubTopicNameFromSlug, getTopicNameFromSlug } from "@/app/actions/topics";
+import {
+  getQuestionsForSubtopic,
+  getSubTopicNameFromSlug,
+  getTopicNameFromSlug,
+} from "@/app/actions/topics";
 import prisma from "@/lib/db";
 
 export default async function SubtopicQuestionsPage({
   params,
 }: {
-  params: Promise<{ topic: string; subtopic: string }>;
+  params: Promise<{ step: string; topic: string; subtopic: string }>;
 }) {
-  const { topic, subtopic } = await params;
+  const { step, topic, subtopic } = await params;
   const topicName = await getTopicNameFromSlug(topic);
   const subtopicName = await getSubTopicNameFromSlug(subtopic);
 

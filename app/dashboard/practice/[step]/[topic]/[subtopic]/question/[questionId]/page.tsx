@@ -6,7 +6,6 @@ import {
 } from "@/app/actions/topics";
 import { QuestionPracticeScreen } from "@/components/question";
 import prisma from "@/lib/db";
-import { PrismaClient } from "@prisma/client";
 import { notFound } from "next/navigation";
 
 // Type definitions to match your component expectations
@@ -27,6 +26,7 @@ type QuestionData = {
 // Function to transform database question to component format
 function transformQuestionData(dbQuestion: any): QuestionData {
   const { question, options, questionTopics, questionSubtopics } = dbQuestion;
+  console.log(options)
 
   // Map database question types to component types
   const typeMapping = {
@@ -56,23 +56,9 @@ function transformQuestionData(dbQuestion: any): QuestionData {
   let questionOptions: string[] | undefined;
   let correctAnswer: string;
 
-  if (
-    question.questionType === "MULTIPLE_CHOICE" ||
-    question.questionType === "MULTIPLE_SELECT"
-  ) {
-    questionOptions = options.map((opt: any) => opt.text);
-    const correctOption = options.find((opt: any) => opt.isCorrect);
-    correctAnswer = correctOption?.text || "";
-  } else if (question.questionType === "TRUE_FALSE") {
-    questionOptions = undefined; // True/False doesn't need options array in your format
-    const correctOption = options.find((opt: any) => opt.isCorrect);
-    correctAnswer = correctOption?.text || "True";
-  } else {
-    // FILL_IN_BLANK or other types
-    questionOptions = undefined;
-    const correctOption = options.find((opt: any) => opt.isCorrect);
-    correctAnswer = correctOption?.text || "";
-  }
+  questionOptions = options.map((opt: any) => opt.text);
+  const correctOption = options.find((opt: any) => opt.isCorrect);
+  correctAnswer = correctOption?.text || "";
 
   return {
     id: parseInt(question.id), // Convert string ID to number to match your format
@@ -228,6 +214,7 @@ export default async function QuestionPracticePage({
     (q: any) => q.id === question.id
   );
   const totalQuestions = allQuestionsInOrder.length;
+  console.log(question);
 
   return (
     <QuestionPracticeScreen

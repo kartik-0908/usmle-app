@@ -4,14 +4,15 @@ import { PracticeSubTopicsTable } from "@/components/practice-subtopics-table";
 export default async function PracticePage({
   params,
 }: {
-  params: Promise<{ step: string,topic: string }>;
+  params: Promise<{ step: string; topic: string }>;
 }) {
-  const { step } = await params;
-  const { topic } = await params;
+  const { step, topic } = await params;
+  console.log("Step:", step);
+  console.log("Topic:", topic);
   const topicName = await getTopicNameFromSlug(topic);
 
   // Get data for the current topic
-  const topicData =  await getSubtopicData(topic); // Replace with actual user ID
+  const topicData = await getSubtopicData(topic); // Replace with actual user ID
 
   if (topicData.length === 0) {
     return (
