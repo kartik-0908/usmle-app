@@ -32,7 +32,7 @@ export function TopicCards({step}:{
     async function fetchTopics() {
       try {
         setLoading(true);
-        const response = await getTopicsWithProgress();
+        const response = await getTopicsWithProgress(step);
         setTopics(response);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");

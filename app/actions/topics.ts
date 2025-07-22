@@ -34,7 +34,7 @@ export async function getSteps(): Promise<StepWithProgress[]> {
   }
 }
 
-export async function getTopicsWithProgress(): Promise<TopicWithProgress[]> {
+export async function getTopicsWithProgress(step: string): Promise<TopicWithProgress[]> {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -45,6 +45,9 @@ export async function getTopicsWithProgress(): Promise<TopicWithProgress[]> {
     const topicsWithData = await prisma.topic.findMany({
       where: {
         isActive: true,
+        step:{
+          slug: step
+        }
       },
       include: {
         UserTopicProgress: {

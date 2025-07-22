@@ -18,6 +18,412 @@ export async function GET(request: Request) {
     return new Response("Error seeding topics", { status: 500 });
   }
 }
+interface SubtopicData {
+  name: string
+  order: number
+  details: string[]
+}
+
+interface TopicData {
+  name: string
+  order: number
+  subtopics: SubtopicData[]
+}
+
+interface StepData {
+  stepNumber: number
+  name: string
+  description: string
+  topics: TopicData[]
+}
+
+interface USMLEData {
+  steps: StepData[]
+}
+
+interface InsertionResults {
+  steps: any[]
+  topics: any[]
+  subtopics: any[]
+}
+
+// Helper function to create slug from name
+function createSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
+const usmleData: USMLEData = {
+  steps: [
+    {
+      stepNumber: 1,
+      name: "Basic Sciences",
+      description: "Foundational medical sciences and organ systems",
+      topics: [
+        {
+          name: "General Principles",
+          order: 1,
+          subtopics: [
+            {
+              name: "Biochemistry & Molecular Biology",
+              order: 1,
+              details: ["DNA/RNA structure", "Transcription", "Translation", "Mutations", "Gene expression"]
+            },
+            {
+              name: "Cell Biology",
+              order: 2,
+              details: ["Cell organelles", "Cell cycle", "Apoptosis", "Cell signaling", "Cytoskeleton"]
+            },
+            {
+              name: "Genetics",
+              order: 3,
+              details: ["Mendelian genetics", "Pedigrees", "Chromosomal abnormalities", "Genetic testing"]
+            },
+            {
+              name: "Immunology",
+              order: 4,
+              details: ["Innate immunity", "Adaptive immunity", "Hypersensitivity reactions", "Immune deficiencies", "Vaccines"]
+            },
+            {
+              name: "Microbiology",
+              order: 5,
+              details: ["Bacteriology", "Virology", "Mycology", "Parasitology", "Antimicrobials", "Resistance mechanisms"]
+            },
+            {
+              name: "Pharmacology",
+              order: 6,
+              details: ["Pharmacokinetics", "Pharmacodynamics", "Drug interactions", "Side effects", "Mechanisms of action"]
+            },
+            {
+              name: "Pathology",
+              order: 7,
+              details: ["Cell injury", "Inflammation", "Neoplasia", "Tissue repair", "Hemodynamics"]
+            },
+            {
+              name: "Behavioral Science",
+              order: 8,
+              details: ["Developmental milestones", "Psychological theories", "Ethics", "Epidemiology", "Biostatistics"]
+            }
+          ]
+        },
+        {
+          name: "Organ Systems",
+          order: 2,
+          subtopics: [
+            {
+              name: "Cardiovascular",
+              order: 1,
+              details: ["Anatomy", "Physiology", "Cardiac cycle", "Congenital heart defects", "Pharmacology"]
+            },
+            {
+              name: "Respiratory",
+              order: 2,
+              details: ["Lung anatomy", "Ventilation/perfusion", "Asthma", "COPD", "Restrictive diseases"]
+            },
+            {
+              name: "Renal",
+              order: 3,
+              details: ["Nephron function", "Acid-base balance", "Renal clearance", "Glomerular diseases"]
+            },
+            {
+              name: "Gastrointestinal",
+              order: 4,
+              details: ["GI motility", "Digestion", "Malabsorption", "Liver pathology", "Enzymes"]
+            },
+            {
+              name: "Endocrine",
+              order: 5,
+              details: ["Hormonal regulation", "Thyroid", "Adrenal", "Pancreas", "Endocrine pharmacology"]
+            },
+            {
+              name: "Reproductive",
+              order: 6,
+              details: ["Embryology", "Menstrual cycle", "Pregnancy", "Contraceptives", "STDs"]
+            },
+            {
+              name: "Musculoskeletal",
+              order: 7,
+              details: ["Bone structure", "Muscle contraction", "Connective tissue diseases", "Arthritis"]
+            },
+            {
+              name: "Nervous System",
+              order: 8,
+              details: ["Neuroanatomy", "Neurotransmitters", "CNS diseases", "Seizures", "Stroke"]
+            },
+            {
+              name: "Skin & Special Senses",
+              order: 9,
+              details: ["Dermatology", "Eye anatomy", "Ear", "Vision and hearing physiology"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      stepNumber: 2,
+      name: "Clinical Sciences",
+      description: "Clinical medicine and physician skills",
+      topics: [
+        {
+          name: "Clinical Medicine",
+          order: 1,
+          subtopics: [
+            {
+              name: "Internal Medicine",
+              order: 1,
+              details: ["Cardiology", "Pulmonology", "Nephrology", "Gastroenterology", "Endocrinology", "Infectious disease", "Oncology"]
+            },
+            {
+              name: "Surgery",
+              order: 2,
+              details: ["Pre-op/post-op care", "Abdominal emergencies", "Trauma", "Surgical infections"]
+            },
+            {
+              name: "Pediatrics",
+              order: 3,
+              details: ["Developmental milestones", "Pediatric infections", "Neonatology", "Vaccines"]
+            },
+            {
+              name: "OB/GYN",
+              order: 4,
+              details: ["Prenatal care", "Labor & delivery", "Contraception", "Menstrual disorders"]
+            },
+            {
+              name: "Psychiatry",
+              order: 5,
+              details: ["Mood disorders", "Psychosis", "Anxiety", "Substance use", "Suicide prevention"]
+            },
+            {
+              name: "Preventive Medicine",
+              order: 6,
+              details: ["Screening guidelines", "Health maintenance", "Risk factor modification"]
+            }
+          ]
+        },
+        {
+          name: "Skills & Physician Tasks",
+          order: 2,
+          subtopics: [
+            {
+              name: "Diagnosis",
+              order: 1,
+              details: []
+            },
+            {
+              name: "Management",
+              order: 2,
+              details: []
+            },
+            {
+              name: "Communication",
+              order: 3,
+              details: []
+            },
+            {
+              name: "Ethical Decision-Making",
+              order: 4,
+              details: []
+            },
+            {
+              name: "Prognosis",
+              order: 5,
+              details: []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      stepNumber: 3,
+      name: "Advanced Clinical Practice",
+      description: "Advanced clinical skills and case simulation",
+      topics: [
+        {
+          name: "Clinical Systems",
+          order: 1,
+          subtopics: [
+            {
+              name: "Advanced Internal Medicine",
+              order: 1,
+              details: ["Multisystem diseases", "Complex comorbidities", "Longitudinal care"]
+            },
+            {
+              name: "Emergency Medicine",
+              order: 2,
+              details: ["ACLS", "Airway management", "Trauma resuscitation", "Toxicology"]
+            },
+            {
+              name: "OB/GYN Advanced",
+              order: 3,
+              details: ["High-risk pregnancies", "Obstetric emergencies", "Chronic conditions in pregnancy"]
+            },
+            {
+              name: "Pediatrics Advanced",
+              order: 4,
+              details: ["Chronic pediatric conditions", "Genetic syndromes", "Developmental delay"]
+            },
+            {
+              name: "Psychiatry Advanced",
+              order: 5,
+              details: ["Chronic psych management", "Medication adherence", "Legal issues"]
+            }
+          ]
+        },
+        {
+          name: "Judgment & Case Simulation",
+          order: 2,
+          subtopics: [
+            {
+              name: "Patient Management",
+              order: 1,
+              details: ["Initial workup", "Treatment planning", "Discharge decisions", "Follow-up"]
+            },
+            {
+              name: "CCS Cases",
+              order: 2,
+              details: ["Simulated patient care", "Time management", "Testing", "Consultation", "Therapy"]
+            },
+            {
+              name: "Professionalism",
+              order: 3,
+              details: ["Ethical dilemmas", "Health systems", "Cost-effective care", "Quality improvement"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const results: InsertionResults = {
+      steps: [],
+      topics: [],
+      subtopics: []
+    }
+
+    // Process each step
+    for (const stepData of usmleData.steps) {
+      console.log(`Processing Step ${stepData.stepNumber}: ${stepData.name}`)
+      
+      // Upsert step
+      const step = await prisma.step.upsert({
+        where: { stepNumber: stepData.stepNumber },
+        update: {
+          name: stepData.name,
+          slug: createSlug(stepData.name),
+          description: stepData.description,
+          updatedAt: new Date()
+        },
+        create: {
+          stepNumber: stepData.stepNumber,
+          name: stepData.name,
+          slug: createSlug(stepData.name),
+          description: stepData.description,
+          order: stepData.stepNumber,
+          isActive: true
+        }
+      })
+
+      results.steps.push(step)
+      console.log(`✅ Step created/updated: ${step.name}`)
+
+      // Process topics for this step
+      for (const topicData of stepData.topics) {
+        console.log(`  Processing Topic: ${topicData.name}`)
+        
+        // Upsert topic
+        const topic = await prisma.topic.upsert({
+          where: { 
+            stepId_name: {
+              stepId: step.id,
+              name: topicData.name
+            }
+          },
+          update: {
+            slug: createSlug(topicData.name),
+            order: topicData.order,
+            updatedAt: new Date()
+          },
+          create: {
+            name: topicData.name,
+            slug: createSlug(topicData.name),
+            order: topicData.order,
+            stepId: step.id,
+            isActive: true
+          }
+        })
+
+        results.topics.push(topic)
+        console.log(`    ✅ Topic created/updated: ${topic.name}`)
+
+        // Process subtopics for this topic
+        if (topicData.subtopics) {
+          for (const subtopicData of topicData.subtopics) {
+            console.log(`    Processing Subtopic: ${subtopicData.name}`)
+            
+            // Upsert subtopic
+            const subtopic = await prisma.subtopic.upsert({
+              where: {
+                topicId_name: {
+                  topicId: topic.id,
+                  name: subtopicData.name
+                }
+              },
+              update: {
+                slug: createSlug(subtopicData.name),
+                order: subtopicData.order,
+                updatedAt: new Date()
+              },
+              create: {
+                name: subtopicData.name,
+                slug: createSlug(subtopicData.name),
+                order: subtopicData.order,
+                topicId: topic.id,
+                isActive: true
+              }
+            })
+
+            results.subtopics.push(subtopic)
+            console.log(`      ✅ Subtopic created/updated: ${subtopic.name}`)
+          }
+        }
+      }
+    }
+
+    // Summary
+    console.log(`\n🎉 Data insertion completed!`)
+    console.log(`Steps: ${results.steps.length}`)
+    console.log(`Topics: ${results.topics.length}`)
+    console.log(`Subtopics: ${results.subtopics.length}`)
+
+    return Response.json({
+      success: true,
+      message: 'USMLE data inserted successfully',
+      summary: {
+        stepsProcessed: results.steps.length,
+        topicsProcessed: results.topics.length,
+        subtopicsProcessed: results.subtopics.length
+      },
+      data: results
+    }, { status: 200 })
+
+  } catch (error) {
+    console.error('Error inserting USMLE data:', error)
+    
+    return Response.json({
+      success: false,
+      message: 'Failed to insert USMLE data',
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    }, { status: 500 })
+    
+  } finally {
+    await prisma.$disconnect()
+  }
+}
 
 async function getO1Explanation(
   ques: string,
@@ -92,7 +498,7 @@ In an acute MI patient who develops hypotension and shock signs after initial tr
 async function saveExaplanation() {
   let count = 0;
   try {
-    while (count < 5) {
+    while (count < 50) {
       console.log("count", count);
       const question = await prisma.question.findFirst({
         where: {
@@ -112,6 +518,7 @@ async function saveExaplanation() {
         },
         data:{
           explanation: explaination,
+          o1answer:"done",
           isActive: true
         }
       })
@@ -468,6 +875,7 @@ import { z } from "zod";
 
 import { createAzure } from "@ai-sdk/azure";
 import { Question, Subtopic, Topic } from "@/app/generated/prisma";
+import { NextRequest } from "next/server";
 
 const azure = createAzure({
   resourceName: "makai-azurespon", // Azure resource name
