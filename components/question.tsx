@@ -118,35 +118,27 @@ export function QuestionPracticeScreen({
   };
 
   const renderQuestionInput = () => {
-    return (
-      <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
-        {question.options?.map((option, index) => (
-          <div key={index} className="flex items-center space-x-2">
-            <RadioGroupItem value={option} id={`option-${index}`} />
-            <Label
-              htmlFor={`option-${index}`}
-              className="flex-1 cursor-pointer"
-            >
-              {option}
-            </Label>
-          </div>
-        ))}
-      </RadioGroup>
-    );
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "Easy":
-        return "text-green-600 bg-green-50 dark:bg-green-950";
-      case "Medium":
-        return "text-yellow-600 bg-yellow-50 dark:bg-yellow-950";
-      case "Hard":
-        return "text-red-600 bg-red-50 dark:bg-red-950";
-      default:
-        return "text-gray-600 bg-gray-50 dark:bg-gray-950";
-    }
-  };
+  const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F','G','H','I','J','K','L','M','N','O']; 
+  
+  return (
+    <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
+      {question.options?.map((option, index) => (
+        <div key={index} className="flex items-center space-x-2">
+          <RadioGroupItem value={option} id={`option-${index}`} />
+          <Label
+            htmlFor={`option-${index}`}
+            className="flex-1 cursor-pointer"
+          >
+            <span className="font-semibold mr-2">
+              {optionLabels[index]})
+            </span>
+            {option}
+          </Label>
+        </div>
+      ))}
+    </RadioGroup>
+  );
+};
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
