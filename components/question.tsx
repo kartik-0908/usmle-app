@@ -1,27 +1,26 @@
 "use client";
 
 import * as React from "react";
-import { IconCheck, IconX, IconRefresh, IconBulb } from "@tabler/icons-react";
+import {
+  IconCheck,
+  IconX,
+  IconRefresh,
+  IconChevronLeft,
+  IconChevronRight,
+} from "@tabler/icons-react";
 import { z } from "zod";
+import { useRouter } from "next/navigation";
 
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
+import { Card, CardContent, CardHeader } from "./ui/card";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
 import { StudyAssistantChat } from "./study-assistant-chat";
 
 export const practiceQuestionSchema = z.object({
-  id: z.number(),
+  id: z.string(), // Changed to string for cuid
   title: z.string(),
   type: z.enum(["MCQ", "True/False", "Fill in the blank", "Short Answer"]),
   difficulty: z.enum(["Easy", "Medium", "Hard"]),
@@ -29,21 +28,47 @@ export const practiceQuestionSchema = z.object({
   options: z.array(z.string()).optional(),
   correctAnswer: z.string(),
   explanation: z.string(),
-
   tags: z.array(z.string()),
   image: z.string().optional(),
   timeLimit: z.number().optional(), // in seconds
 });
 
+type QuestionData = z.infer<typeof practiceQuestionSchema>;
+
+interface QuestionPracticeScreenProps {
+  question: QuestionData;
+  topicName?: string;
+  subtopicName?: string;
+  currentQuestionIndex?: number;
+  totalQuestions?: number;
+  allQuestions?: QuestionData[];
+  stepSlug: string;
+  topicSlug?: string;
+  subtopicSlug?: string;
+}
+
 export function QuestionPracticeScreen({
   question,
-}: {
-  question: z.infer<typeof practiceQuestionSchema>;
-}) {
+  currentQuestionIndex = 0,
+  totalQuestions = 1,
+  allQuestions = [],
+  stepSlug,
+  topicSlug,
+  subtopicSlug,
+}: QuestionPracticeScreenProps) {
+  const router = useRouter();
   const [selectedAnswer, setSelectedAnswer] = React.useState<string>("");
   const [showAnswer, setShowAnswer] = React.useState(false);
   const [isCorrect, setIsCorrect] = React.useState<boolean | null>(null);
   const [timeSpent, setTimeSpent] = React.useState(0);
+
+  // Reset states when question changes
+  React.useEffect(() => {
+    setSelectedAnswer("");
+    setShowAnswer(false);
+    setIsCorrect(null);
+    setTimeSpent(0);
+  }, [question.id]);
 
   // Timer
   React.useEffect(() => {
@@ -52,7 +77,7 @@ export function QuestionPracticeScreen({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [question.id]); // Reset timer when question changes
 
   const handleSubmit = () => {
     if (!selectedAnswer) return;
@@ -67,6 +92,29 @@ export function QuestionPracticeScreen({
     setShowAnswer(false);
     setIsCorrect(null);
     setTimeSpent(0);
+  };
+
+  const navigateToQuestion = (questionIndex: number) => {
+    if (questionIndex < 0 || questionIndex >= allQuestions.length) return;
+
+    const targetQuestion = allQuestions[questionIndex];
+    if (topicSlug && subtopicSlug) {
+      router.push(
+        `/dashboard/practice/${stepSlug}/${topicSlug}/${subtopicSlug}/question/${targetQuestion.id}`
+      );
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentQuestionIndex > 0) {
+      navigateToQuestion(currentQuestionIndex - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentQuestionIndex < totalQuestions - 1) {
+      navigateToQuestion(currentQuestionIndex + 1);
+    }
   };
 
   const renderQuestionInput = () => {
@@ -108,10 +156,57 @@ export function QuestionPracticeScreen({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header with timer */}
+      {/* Header with timer and navigation */}
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          {/* <h1 className="text-2xl font-bold">{question.title}</h1> */}
+          {/* Navigation Controls */}
+          <div className="flex items-center gap-4">
+            {totalQuestions > 1 && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevious}
+                  disabled={currentQuestionIndex === 0}
+                >
+                  <IconChevronLeft className="size-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNext}
+                  disabled={currentQuestionIndex === totalQuestions - 1}
+                >
+                  Next
+                  <IconChevronRight className="size-4 ml-1" />
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Center - Progress Info */}
+          <div className="flex items-center gap-4">
+            {totalQuestions > 1 && (
+              <>
+                <Badge variant="secondary" className="text-sm">
+                  Question {currentQuestionIndex + 1} of {totalQuestions}
+                </Badge>
+
+                {/* Progress bar */}
+                <div className="w-32 bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`,
+                    }}
+                  ></div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Right - Timer */}
           <div className="flex items-center gap-4">
             <Badge variant="outline" className="text-sm">
               Time: {formatTime(timeSpent)}
@@ -125,13 +220,15 @@ export function QuestionPracticeScreen({
         </div>
       </div>
 
+      {/* Remove the separate navigation card section completely */}
+
       {/* Main Content */}
       <div className="container mx-auto px-4 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Question */}
           <div className="lg:col-span-2">
             <Card>
-              <CardHeader>
+              {/* <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">{question.type}</Badge>
@@ -147,7 +244,7 @@ export function QuestionPracticeScreen({
                     ))}
                   </div>
                 </div>
-              </CardHeader>
+              </CardHeader> */}
               <CardContent className="space-y-6">
                 {/* Question Image */}
                 {question.image && (
@@ -231,19 +328,6 @@ export function QuestionPracticeScreen({
                         </p>
                       )}
                     </div>
-
-                    {/* Explanation */}
-                    {/* <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-950">
-                      <div className="flex items-center gap-2 mb-2">
-                        <IconBulb className="size-5 text-blue-600" />
-                        <span className="font-semibold text-blue-800 dark:text-blue-200">
-                          Explanation
-                        </span>
-                      </div>
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                        {question.explanation}
-                      </p>
-                    </div> */}
                   </div>
                 )}
               </CardContent>

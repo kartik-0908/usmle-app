@@ -10,7 +10,7 @@ import { notFound } from "next/navigation";
 
 // Type definitions to match your component expectations
 type QuestionData = {
-  id: number;
+  id: string; // Changed to string for cuid
   title: string;
   type: "MCQ" | "True/False" | "Short Answer" | "Fill in the blank";
   difficulty: "Easy" | "Medium" | "Hard";
@@ -26,7 +26,7 @@ type QuestionData = {
 // Function to transform database question to component format
 function transformQuestionData(dbQuestion: any): QuestionData {
   const { question, options, questionTopics, questionSubtopics } = dbQuestion;
-  console.log(options)
+  console.log(options);
 
   // Map database question types to component types
   const typeMapping = {
@@ -61,7 +61,7 @@ function transformQuestionData(dbQuestion: any): QuestionData {
   correctAnswer = correctOption?.text || "";
 
   return {
-    id: parseInt(question.id), // Convert string ID to number to match your format
+    id: question.id, // Keep as string (cuid)
     title: question.title,
     //@ts-ignore
     type: typeMapping[question.questionType] || "MCQ",
@@ -183,9 +183,9 @@ async function getQuestionsForNavigation(
 export default async function QuestionPracticePage({
   params,
 }: {
-  params: Promise<{ topic: string; subtopic: string; questionId: string }>;
+  params: Promise<{ step: string,topic: string; subtopic: string; questionId: string }>;
 }) {
-  const { topic, subtopic, questionId } = await params;
+  const { step, topic, subtopic, questionId } = await params;
 
   // Fetch topic and subtopic names
   const topicName = await getTopicNameFromSlug(topic);
@@ -219,11 +219,14 @@ export default async function QuestionPracticePage({
   return (
     <QuestionPracticeScreen
       question={question}
-      // topicName={topicName}
-      // subtopicName={subtopicName}
-      // currentQuestionIndex={currentQuestionIndex}
-      // totalQuestions={totalQuestions}
-      // allQuestions={allQuestionsInOrder}
+      topicName={topicName}
+      subtopicName={subtopicName}
+      currentQuestionIndex={currentQuestionIndex}
+      totalQuestions={totalQuestions}
+      allQuestions={allQuestionsInOrder}
+      stepSlug={step}
+      topicSlug={topic}
+      subtopicSlug={subtopic}
     />
   );
 }

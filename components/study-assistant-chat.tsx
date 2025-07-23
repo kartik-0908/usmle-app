@@ -1,17 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { IconBulb, IconSend, IconMicrophone, IconKeyboard } from "@tabler/icons-react";
+import {
+  IconBulb,
+  IconSend,
+  IconMicrophone,
+  IconKeyboard,
+} from "@tabler/icons-react";
 import { useChat } from "@ai-sdk/react";
 import { z } from "zod";
-import Markdown from 'react-markdown'
+import Markdown from "react-markdown";
 
 import { Button } from "./ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "./ui/card";
+import { Card, CardContent, CardHeader } from "./ui/card";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { Switch } from "./ui/switch";
@@ -20,7 +21,7 @@ import RealtimeVoiceAgent from "./voice";
 
 // Question schema for context
 export const practiceQuestionSchema = z.object({
-  id: z.number(),
+  id: z.string(),
   title: z.string(),
   type: z.enum(["MCQ", "True/False", "Fill in the blank", "Short Answer"]),
   difficulty: z.enum(["Easy", "Medium", "Hard"]),
@@ -42,7 +43,7 @@ interface StudyAssistantChatProps {
 }
 
 // Cookie utilities
-const VOICE_MODE_COOKIE = 'sg-voice-mode';
+const VOICE_MODE_COOKIE = "sg-voice-mode";
 
 const setCookie = (name: string, value: string, days: number = 30) => {
   const expires = new Date();
@@ -51,13 +52,13 @@ const setCookie = (name: string, value: string, days: number = 30) => {
 };
 
 const getCookie = (name: string): string | null => {
-  if (typeof document === 'undefined') return null;
-  
+  if (typeof document === "undefined") return null;
+
   const nameEQ = name + "=";
-  const ca = document.cookie.split(';');
+  const ca = document.cookie.split(";");
   for (let i = 0; i < ca.length; i++) {
     let c = ca[i];
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    while (c.charAt(0) === " ") c = c.substring(1, c.length);
     if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
   }
   return null;
@@ -78,7 +79,7 @@ export function StudyAssistantChat({
   React.useEffect(() => {
     const savedVoiceMode = getCookie(VOICE_MODE_COOKIE);
     if (savedVoiceMode !== null) {
-      setIsVoiceMode(savedVoiceMode === 'true');
+      setIsVoiceMode(savedVoiceMode === "true");
     }
     setIsInitialized(true);
   }, []);
@@ -94,31 +95,38 @@ export function StudyAssistantChat({
     setIsVoiceMode(checked);
   };
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error, append } =
-    useChat({
-      api: "/api/study-assistant",
-      initialMessages: [
-        {
-          id: "initial",
-          role: "assistant",
-          content: `Hi! How may i help you`,
-        },
-      ],
-      body: {
-        questionContext: {
-          id: question.id,
-          type: question.type,
-          difficulty: question.difficulty,
-          question: question.question,
-          options: question.options,
-          tags: question.tags,
-          explanation: question,
-          userAnswer,
-          showAnswer,
-          isCorrect,
-        },
+  const {
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    error,
+    append,
+  } = useChat({
+    api: "/api/study-assistant",
+    initialMessages: [
+      {
+        id: "initial",
+        role: "assistant",
+        content: `Hi! How may i help you`,
       },
-    });
+    ],
+    body: {
+      questionContext: {
+        id: question.id,
+        type: question.type,
+        difficulty: question.difficulty,
+        question: question.question,
+        options: question.options,
+        tags: question.tags,
+        explanation: question,
+        userAnswer,
+        showAnswer,
+        isCorrect,
+      },
+    },
+  });
 
   // Don't render until we've loaded the cookie preference
   if (!isInitialized) {
@@ -139,11 +147,10 @@ export function StudyAssistantChat({
       {/* Header with Mode Toggle */}
       <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
-     
           {/* Mode Toggle */}
           <div className="flex items-center space-x-2">
-            <Label 
-              htmlFor="voice-toggle" 
+            <Label
+              htmlFor="voice-toggle"
               className="text-sm font-medium flex items-center gap-1"
             >
               <IconKeyboard className="size-4" />
@@ -154,8 +161,8 @@ export function StudyAssistantChat({
               checked={isVoiceMode}
               onCheckedChange={handleVoiceModeToggle}
             />
-            <Label 
-              htmlFor="voice-toggle" 
+            <Label
+              htmlFor="voice-toggle"
               className="text-sm font-medium flex items-center gap-1"
             >
               <IconMicrophone className="size-4" />
@@ -171,9 +178,9 @@ export function StudyAssistantChat({
           // Voice Mode - Show RealtimeVoiceAgent
           <div className="flex-1 flex flex-col">
             <RealtimeVoiceAgent
-            question={question.question || ''}
-            options={question.options || []}
-            explanation={question.explanation || ''}
+              question={question.question || ""}
+              options={question.options || []}
+              explanation={question.explanation || ""}
             />
           </div>
         ) : (
@@ -190,8 +197,13 @@ export function StudyAssistantChat({
                         Ask me anything about this question!
                       </p>
                       <div className="mt-4 p-3 bg-muted/50 rounded-lg text-xs">
-                        <p className="font-medium mb-1">Current mode: {isVoiceMode ? 'Voice' : 'Text'}</p>
-                        <p>Switch between text and voice input using the toggle above</p>
+                        <p className="font-medium mb-1">
+                          Current mode: {isVoiceMode ? "Voice" : "Text"}
+                        </p>
+                        <p>
+                          Switch between text and voice input using the toggle
+                          above
+                        </p>
                       </div>
                     </div>
                   ) : (
@@ -199,7 +211,9 @@ export function StudyAssistantChat({
                       <div
                         key={message.id}
                         className={`flex ${
-                          message.role === "user" ? "justify-end" : "justify-start"
+                          message.role === "user"
+                            ? "justify-end"
+                            : "justify-start"
                         }`}
                       >
                         <div
