@@ -132,33 +132,6 @@ const columns: ColumnDef<z.infer<typeof questionSchema>>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "type",
-    header: "Type",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="text-xs">
-        {row.original.type}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "difficulty",
-    header: "Difficulty",
-    cell: ({ row }) => {
-      const difficulty = row.original.difficulty;
-      const variant =
-        difficulty === "Easy"
-          ? "default"
-          : difficulty === "Medium"
-            ? "secondary"
-            : "destructive";
-      return (
-        <Badge variant={variant} className="text-xs">
-          {difficulty}
-        </Badge>
-      );
-    },
-  },
-  {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {

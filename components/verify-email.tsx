@@ -168,7 +168,7 @@ export function EmailTemplate({ link }: EmailTemplateProps) {
                 <li style={{ marginBottom: '4px' }}>AI-generated practice questions</li>
                 <li style={{ marginBottom: '4px' }}>Personalized study plans</li>
                 <li style={{ marginBottom: '4px' }}>Progress tracking and analytics</li>
-                <li style={{ marginBottom: '4px' }}>Expert explanations and rationales</li>
+                {/* <li style={{ marginBottom: '4px' }}>Expert explanations and rationales</li> */}
               </ul>
             </div>
           </div>

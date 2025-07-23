@@ -501,7 +501,7 @@ In an acute MI patient who develops hypotension and shock signs after initial tr
 async function saveExaplanation() {
   let count = 0;
   try {
-    while (count < 50) {
+    while (count < 500) {
       console.log("count", count);
       const question = await prisma.question.findFirst({
         where: {
