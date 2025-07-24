@@ -1,8 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// This is your optimized Prisma schema file with performance indexes
 
 generator client {
   provider = "prisma-client-js"
@@ -51,6 +47,9 @@ model Step {
   topics           Topic[]
   UserStepProgress UserStepProgress[]
 
+  // Optimized indexes
+  @@index([isActive, order]) // For active steps ordering
+  @@index([slug, isActive]) // For slug lookups with active filter
   @@map("steps")
 }
 
@@ -73,7 +72,10 @@ model Topic {
   UserTopicProgress UserTopicProgress[]
 
   @@unique([stepId, name])
-  @@index([slug])
+  // Optimized indexes
+  @@index([slug, isActive]) // Critical: for your slug+active lookups
+  @@index([stepId, isActive, order]) // For step topics ordering
+  @@index([isActive, createdAt]) // For active topics by date
   @@map("topics")
 }
 
@@ -94,7 +96,10 @@ model Subtopic {
   questionSubtopics QuestionSubtopic[]
 
   @@unique([topicId, name])
-  @@index([slug])
+  // Optimized indexes
+  @@index([slug, isActive]) // Critical: for your slug+active lookups
+  @@index([topicId, isActive, order]) // For topic subtopics ordering
+  @@index([isActive, createdAt]) // For active subtopics by date
   @@map("subtopics")
 }
 
@@ -117,8 +122,12 @@ model Question {
   attempts            UserAttempt[]
   problemSetQuestions ProblemSetQuestion[]
 
+  // Optimized indexes
+  @@index([isActive, createdAt]) // Critical: for your navigation queries
+  @@index([isActive, difficulty]) // For filtering by difficulty
+  @@index([isActive, questionType]) // For filtering by type
+  @@index([createdAt]) // For ordering questions
   @@map("questions")
-  @@index([id])
 }
 
 model Option {
@@ -130,11 +139,13 @@ model Option {
   questionId String
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
+  // Optimized indexes
+  @@index([questionId, order]) // For ordered options lookup
+  @@index([questionId, isCorrect]) // For finding correct answers quickly
   @@map("options")
 }
 
 // Junction table for Question-Topic many-to-many relationship
-
 model QuestionTopic {
   questionId String
   topicId    String
@@ -144,11 +155,14 @@ model QuestionTopic {
   topic    Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
   @@id([questionId, topicId])
+  // Critical indexes for junction table performance
+  @@index([topicId]) // For topic -> questions lookups
+  @@index([questionId]) // For question -> topics lookups
+  @@index([topicId, createdAt]) // For ordered topic questions
   @@map("question_topics")
 }
 
 // Junction table for Question-Subtopic many-to-many relationship
-
 model QuestionSubtopic {
   questionId String
   subtopicId String
@@ -158,6 +172,10 @@ model QuestionSubtopic {
   subtopic Subtopic @relation(fields: [subtopicId], references: [id], onDelete: Cascade)
 
   @@id([questionId, subtopicId])
+  // Critical indexes for junction table performance
+  @@index([subtopicId]) // For subtopic -> questions lookups
+  @@index([questionId]) // For question -> subtopics lookups
+  @@index([subtopicId, createdAt]) // For ordered subtopic questions
   @@map("question_subtopics")
 }
 
@@ -173,11 +191,12 @@ model ProblemSet {
   questions       ProblemSetQuestion[]
   userProblemSets UserProblemSet[]
 
+  // Optimized indexes
+  @@index([isActive, createdAt]) // For active problem sets
   @@map("problem_sets")
 }
 
 // Junction table for ProblemSet-Question many-to-many relationship
-
 model ProblemSetQuestion {
   problemSetId String
   questionId   String
@@ -188,6 +207,9 @@ model ProblemSetQuestion {
   question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@id([problemSetId, questionId])
+  // Optimized indexes
+  @@index([problemSetId, order]) // For ordered problem set questions
+  @@index([questionId]) // For question lookups
   @@map("problem_set_questions")
 }
 
@@ -205,6 +227,10 @@ model UserAttempt {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
+  // Optimized indexes
+  @@index([userId, attemptedAt]) // For user attempt history
+  @@index([questionId, isCorrect]) // For question analytics
+  @@index([userId, questionId]) // For checking if user attempted question
   @@map("user_attempts")
 }
 
@@ -226,6 +252,9 @@ model UserProblemSet {
   User       User       @relation(fields: [userId], references: [id])
 
   @@unique([userId, problemSetId])
+  // Optimized indexes
+  @@index([userId, status]) // For user progress queries
+  @@index([problemSetId, status]) // For problem set analytics
   @@map("user_problem_sets")
 }
 
@@ -247,6 +276,9 @@ model UserTopicProgress {
   topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
   @@unique([userId, topicId])
+  // Optimized indexes
+  @@index([userId, lastPracticedAt]) // For recent practice queries
+  @@index([topicId, questionsCorrect]) // For topic leaderboards
   @@map("user_topic_progress")
 }
 
@@ -270,11 +302,14 @@ model UserStepProgress {
   step Step @relation(fields: [stepId], references: [id], onDelete: Cascade)
 
   @@unique([userId, stepId])
+  // Optimized indexes
+  @@index([userId, isCompleted]) // For user progress queries
+  @@index([stepId, isCompleted]) // For step completion analytics
+  @@index([userId, lastPracticedAt]) // For recent practice queries
   @@map("user_step_progress")
 }
 
-// Enums
-
+// Enums (unchanged)
 enum Difficulty {
   EASY
   MEDIUM
@@ -307,6 +342,8 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([token])
+  // Optimized indexes
+  @@index([userId, expiresAt]) // For session cleanup
   @@map("session")
 }
 
@@ -326,6 +363,8 @@ model Account {
   createdAt             DateTime
   updatedAt             DateTime
 
+  // Optimized indexes
+  @@index([userId, providerId]) // For user account lookups
   @@map("account")
 }
 
@@ -337,5 +376,8 @@ model Verification {
   createdAt  DateTime?
   updatedAt  DateTime?
 
+  // Optimized indexes
+  @@index([identifier, value]) // For verification lookups
+  @@index([expiresAt]) // For cleanup of expired verifications
   @@map("verification")
 }

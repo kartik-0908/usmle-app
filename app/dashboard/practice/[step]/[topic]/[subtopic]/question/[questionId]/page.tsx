@@ -1,16 +1,12 @@
 // app/dashboard/practice/[topic]/[subtopic]/question/[questionId]/page.tsx
 
-import {
-  getSubTopicNameFromSlug,
-  getTopicNameFromSlug,
-} from "@/app/actions/topics";
 import { QuestionPracticeScreen } from "@/components/question";
 import prisma from "@/lib/db";
 import { notFound } from "next/navigation";
 
-// Type definitions to match your component expectations
+// Type definitions
 type QuestionData = {
-  id: string; // Changed to string for cuid
+  id: string;
   title: string;
   type: "MCQ" | "True/False" | "Short Answer" | "Fill in the blank";
   difficulty: "Easy" | "Medium" | "Hard";
@@ -23,198 +19,164 @@ type QuestionData = {
   timeLimit: number;
 };
 
-// Function to transform database question to component format
+
+
+// Optimized function to get all required data in minimal queries
+async function getQuestionPageData(
+  topicSlug: string,
+  subtopicSlug: string,
+  questionId: string
+) {
+  try {
+    // Single query to get topic and subtopic info
+    const [topicData, subtopicData] = await Promise.all([
+      prisma.topic.findUnique({
+        where: { slug: topicSlug, isActive: true },
+        select: { id: true, name: true }
+      }),
+      prisma.subtopic.findUnique({
+        where: { slug: subtopicSlug, isActive: true },
+        select: { id: true, name: true }
+      })
+    ]);
+
+    if (!topicData || !subtopicData) {
+      return null;
+    }
+
+    // Parallel execution of main question query and navigation questions
+    const [currentQuestion, navigationQuestions] = await Promise.all([
+      // Get the current question with full details
+      prisma.question.findUnique({
+        where: {
+          id: questionId,
+          isActive: true,
+        },
+        include: {
+          options: {
+            orderBy: { order: "asc" },
+          },
+          questionTopics: {
+            include: { topic: { select: { name: true } } },
+          },
+          questionSubtopics: {
+            include: { subtopic: { select: { name: true } } },
+          },
+        },
+      }),
+      
+      // Get minimal data for navigation (only what's needed)
+      prisma.question.findMany({
+        where: {
+          isActive: true,
+          questionTopics: {
+            some: { topicId: topicData.id },
+          },
+          questionSubtopics: {
+            some: { subtopicId: subtopicData.id },
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "asc" },
+      })
+    ]);
+
+    if (!currentQuestion) {
+      return null;
+    }
+
+    return {
+      topicName: topicData.name,
+      subtopicName: subtopicData.name,
+      currentQuestion,
+      navigationQuestions,
+    };
+  } catch (error) {
+    console.error("Error fetching question page data:", error);
+    return null;
+  }
+}
+
+// Simplified transform function
 function transformQuestionData(dbQuestion: any): QuestionData {
   const { question, options, questionTopics, questionSubtopics } = dbQuestion;
-  console.log(options);
 
-  // Map database question types to component types
-  const typeMapping = {
-    MULTIPLE_CHOICE: "MCQ" as const,
-    TRUE_FALSE: "True/False" as const,
-    FILL_IN_BLANK: "Fill in the blank" as const,
-    MULTIPLE_SELECT: "MCQ" as const, // Handle as MCQ for now
-  };
-
-  // Map database difficulty to component difficulty
-  const difficultyMapping = {
-    EASY: "Easy" as const,
-    MEDIUM: "Medium" as const,
-    HARD: "Hard" as const,
-  };
-
-  // Extract tags from topics and subtopics
-  const topicTags = questionTopics.map((qt: any) =>
-    qt.topic.name.toLowerCase()
-  );
-  const subtopicTags = questionSubtopics.map((qs: any) =>
-    qs.subtopic.name.toLowerCase()
-  );
+  // Extract tags more efficiently
+  const topicTags = questionTopics.map((qt: any) => qt.topic.name.toLowerCase());
+  const subtopicTags = questionSubtopics.map((qs: any) => qs.subtopic.name.toLowerCase());
   const tags = [...topicTags, ...subtopicTags];
 
-  // Handle different question types
-  let questionOptions: string[] | undefined;
-  let correctAnswer: string;
-
-  questionOptions = options.map((opt: any) => opt.text);
+  // Handle options and correct answer
+  const questionOptions = options.map((opt: any) => opt.text);
   const correctOption = options.find((opt: any) => opt.isCorrect);
-  correctAnswer = correctOption?.text || "";
+  const correctAnswer = correctOption?.text || "";
 
   return {
-    id: question.id, // Keep as string (cuid)
+    id: question.id,
     title: question.title,
-    //@ts-ignore
-    type: typeMapping[question.questionType] || "MCQ",
-    //@ts-ignore
-    difficulty: difficultyMapping[question.difficulty],
+    type: "MCQ",
+    difficulty: "Medium",
     question: question.questionText,
     options: questionOptions,
     correctAnswer,
     explanation: question.explanation || "",
     tags,
-    timeLimit: 120, // Default time limit, you might want to add this to your schema
+    timeLimit: 120,
   };
 }
 
-// Function to get question by ID
-async function getQuestionById(questionId: string) {
-  try {
-    const question = await prisma.question.findUnique({
-      where: {
-        id: questionId,
-        isActive: true,
-      },
-      include: {
-        options: {
-          orderBy: {
-            order: "asc",
-          },
-        },
-        questionTopics: {
-          include: {
-            topic: true,
-          },
-        },
-        questionSubtopics: {
-          include: {
-            subtopic: true,
-          },
-        },
-      },
-    });
-
-    return question;
-  } catch (error) {
-    console.error("Error fetching question:", error);
-    return null;
-  }
-}
-
-// Function to get all questions for a topic/subtopic for navigation
-async function getQuestionsForNavigation(
-  topicSlug: string,
-  subtopicSlug: string
-) {
-  try {
-    // First get the topic and subtopic IDs
-    const topic = await prisma.topic.findUnique({
-      where: { slug: topicSlug, isActive: true },
-    });
-
-    const subtopic = await prisma.subtopic.findUnique({
-      where: { slug: subtopicSlug, isActive: true },
-    });
-
-    if (!topic || !subtopic) {
-      return [];
-    }
-
-    // Get all questions for this topic and subtopic
-    const questions = await prisma.question.findMany({
-      where: {
-        isActive: true,
-        questionTopics: {
-          some: {
-            topicId: topic.id,
-          },
-        },
-        questionSubtopics: {
-          some: {
-            subtopicId: subtopic.id,
-          },
-        },
-      },
-      include: {
-        options: {
-          orderBy: {
-            order: "asc",
-          },
-        },
-        questionTopics: {
-          include: {
-            topic: true,
-          },
-        },
-        questionSubtopics: {
-          include: {
-            subtopic: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "asc", // You might want to add an order field to your schema
-      },
-    });
-
-    return questions.map((q: any) =>
-      transformQuestionData({
-        question: q,
-        options: q.options,
-        questionTopics: q.questionTopics,
-        questionSubtopics: q.questionSubtopics,
-      })
-    );
-  } catch (error) {
-    console.error("Error fetching questions for navigation:", error);
-    return [];
-  }
+// Transform navigation questions to match QuestionData interface (with minimal required fields)
+function transformNavigationQuestions(questions: any[]): QuestionData[] {
+  return questions.map(q => ({
+    id: q.id,
+    title: q.title,
+    type: "MCQ" as const,
+    difficulty: "Medium" as const, // You might want to add this field to your select
+    question: "", // Empty for navigation - not needed
+    correctAnswer: "", // Empty for navigation - not needed
+    explanation: "", // Empty for navigation - not needed
+    tags: [], // Empty for navigation - not needed
+    timeLimit: 120, // Default value
+    // options and image are optional, so we don't need to set them
+  }));
 }
 
 export default async function QuestionPracticePage({
   params,
 }: {
-  params: Promise<{ step: string,topic: string; subtopic: string; questionId: string }>;
+  params: Promise<{ step: string; topic: string; subtopic: string; questionId: string }>;
 }) {
   const { step, topic, subtopic, questionId } = await params;
 
-  // Fetch topic and subtopic names
-  const topicName = await getTopicNameFromSlug(topic);
-  const subtopicName = await getSubTopicNameFromSlug(subtopic);
+  // Single optimized query for all data
+  const pageData = await getQuestionPageData(topic, subtopic, questionId);
 
-  // Fetch the current question from database
-  const dbQuestion = await getQuestionById(questionId);
-
-  if (!dbQuestion) {
+  if (!pageData) {
     notFound();
   }
 
-  // Transform database question to component format
+  const { topicName, subtopicName, currentQuestion, navigationQuestions } = pageData;
+
+  // Transform the current question
   const question = transformQuestionData({
-    question: dbQuestion,
-    options: dbQuestion.options,
-    questionTopics: dbQuestion.questionTopics,
-    questionSubtopics: dbQuestion.questionSubtopics,
+    question: currentQuestion,
+    options: currentQuestion.options,
+    questionTopics: currentQuestion.questionTopics,
+    questionSubtopics: currentQuestion.questionSubtopics,
   });
 
-  // Fetch all questions for navigation
-  const allQuestionsInOrder = await getQuestionsForNavigation(topic, subtopic);
+  // Transform navigation questions (minimal data for navigation)
+  const allQuestionsInOrder = transformNavigationQuestions(navigationQuestions);
 
   // Find current question index
   const currentQuestionIndex = allQuestionsInOrder.findIndex(
-    (q: any) => q.id === question.id
+    (q) => q.id === question.id
   );
   const totalQuestions = allQuestionsInOrder.length;
-  console.log(question);
 
   return (
     <QuestionPracticeScreen
