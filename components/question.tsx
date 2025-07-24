@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader } from "./ui/card";
+import { Card, CardContent } from "./ui/card";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
@@ -40,6 +40,7 @@ type QuestionData = z.infer<typeof practiceQuestionSchema>;
 
 interface QuestionPracticeScreenProps {
   question: QuestionData;
+  userId: string; // Add userId prop
   topicName?: string;
   subtopicName?: string;
   currentQuestionIndex?: number;
@@ -52,6 +53,7 @@ interface QuestionPracticeScreenProps {
 
 export function QuestionPracticeScreen({
   question,
+  userId, // Add userId to destructured props
   currentQuestionIndex = 0,
   totalQuestions = 1,
   allQuestions = [],
@@ -64,6 +66,7 @@ export function QuestionPracticeScreen({
   const [showAnswer, setShowAnswer] = React.useState(false);
   const [isCorrect, setIsCorrect] = React.useState<boolean | null>(null);
   const [timeSpent, setTimeSpent] = React.useState(0);
+  const [isSubmitting, setIsSubmitting] = React.useState(false); // Add loading state
   
   // Layout state - Start with default to avoid hydration mismatch
   const [questionWidth, setQuestionWidth] = React.useState(66.67); // Default to 2/3 (66.67%)
@@ -101,6 +104,7 @@ export function QuestionPracticeScreen({
     setShowAnswer(false);
     setIsCorrect(null);
     setTimeSpent(0);
+    setIsSubmitting(false);
   }, [question.id]);
 
   // Timer
@@ -159,12 +163,57 @@ export function QuestionPracticeScreen({
     setQuestionWidth(width);
   };
 
-  const handleSubmit = () => {
-    if (!selectedAnswer) return;
+  // Function to save user attempt to database
+  const saveUserAttempt = async (selectedAnswer: string, isCorrect: boolean, timeSpent: number) => {
+    try {
+      const response = await fetch('/api/user-attempts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          questionId: question.id,
+          selectedOptions: [selectedAnswer], // Convert single answer to array format
+          isCorrect,
+          timeSpent,
+        }),
+      });
 
-    const correct = selectedAnswer === question.correctAnswer;
-    setIsCorrect(correct);
-    setShowAnswer(true);
+      if (!response.ok) {
+        throw new Error('Failed to save attempt');
+      }
+
+      const result = await response.json();
+      console.log('Attempt saved successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Error saving attempt:', error);
+      // You might want to show a toast notification here
+      throw error;
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedAnswer || isSubmitting) return;
+
+    setIsSubmitting(true);
+    
+    try {
+      const correct = selectedAnswer === question.correctAnswer;
+      setIsCorrect(correct);
+      setShowAnswer(true);
+
+      // Save the attempt to database
+      await saveUserAttempt(selectedAnswer, correct, timeSpent);
+      
+    } catch (error) {
+      console.error('Failed to save attempt:', error);
+      // Still show the answer even if saving failed
+      // You might want to show an error message to the user
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
@@ -172,6 +221,7 @@ export function QuestionPracticeScreen({
     setShowAnswer(false);
     setIsCorrect(null);
     setTimeSpent(0);
+    setIsSubmitting(false);
   };
 
   const navigateToQuestion = (questionIndex: number) => {
@@ -204,10 +254,10 @@ export function QuestionPracticeScreen({
       <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
         {question.options?.map((option, index) => (
           <div key={index} className="flex items-center space-x-2">
-            <RadioGroupItem value={option} id={`option-${index}`} />
+            <RadioGroupItem value={option} id={`option-${index}`} disabled={showAnswer} />
             <Label
               htmlFor={`option-${index}`}
-              className="flex-1 cursor-pointer"
+              className={`flex-1 cursor-pointer ${showAnswer ? 'cursor-default' : ''}`}
             >
               <span className="font-semibold mr-2">
                 {optionLabels[index]})
@@ -354,10 +404,10 @@ export function QuestionPracticeScreen({
                   {!showAnswer ? (
                     <Button
                       onClick={handleSubmit}
-                      disabled={!selectedAnswer}
+                      disabled={!selectedAnswer || isSubmitting}
                       className="px-8"
                     >
-                      Submit Answer
+                      {isSubmitting ? 'Submitting...' : 'Submit Answer'}
                     </Button>
                   ) : (
                     <Button

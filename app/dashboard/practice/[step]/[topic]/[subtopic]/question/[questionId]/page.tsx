@@ -19,8 +19,6 @@ type QuestionData = {
   timeLimit: number;
 };
 
-
-
 // Optimized function to get all required data in minimal queries
 async function getQuestionPageData(
   topicSlug: string,
@@ -32,12 +30,12 @@ async function getQuestionPageData(
     const [topicData, subtopicData] = await Promise.all([
       prisma.topic.findUnique({
         where: { slug: topicSlug, isActive: true },
-        select: { id: true, name: true }
+        select: { id: true, name: true },
       }),
       prisma.subtopic.findUnique({
         where: { slug: subtopicSlug, isActive: true },
-        select: { id: true, name: true }
-      })
+        select: { id: true, name: true },
+      }),
     ]);
 
     if (!topicData || !subtopicData) {
@@ -64,7 +62,7 @@ async function getQuestionPageData(
           },
         },
       }),
-      
+
       // Get minimal data for navigation (only what's needed)
       prisma.question.findMany({
         where: {
@@ -82,7 +80,7 @@ async function getQuestionPageData(
           createdAt: true,
         },
         orderBy: { createdAt: "asc" },
-      })
+      }),
     ]);
 
     if (!currentQuestion) {
@@ -106,8 +104,12 @@ function transformQuestionData(dbQuestion: any): QuestionData {
   const { question, options, questionTopics, questionSubtopics } = dbQuestion;
 
   // Extract tags more efficiently
-  const topicTags = questionTopics.map((qt: any) => qt.topic.name.toLowerCase());
-  const subtopicTags = questionSubtopics.map((qs: any) => qs.subtopic.name.toLowerCase());
+  const topicTags = questionTopics.map((qt: any) =>
+    qt.topic.name.toLowerCase()
+  );
+  const subtopicTags = questionSubtopics.map((qs: any) =>
+    qs.subtopic.name.toLowerCase()
+  );
   const tags = [...topicTags, ...subtopicTags];
 
   // Handle options and correct answer
@@ -131,7 +133,7 @@ function transformQuestionData(dbQuestion: any): QuestionData {
 
 // Transform navigation questions to match QuestionData interface (with minimal required fields)
 function transformNavigationQuestions(questions: any[]): QuestionData[] {
-  return questions.map(q => ({
+  return questions.map((q) => ({
     id: q.id,
     title: q.title,
     type: "MCQ" as const,
@@ -144,13 +146,24 @@ function transformNavigationQuestions(questions: any[]): QuestionData[] {
     // options and image are optional, so we don't need to set them
   }));
 }
+import { headers } from "next/headers";
+import { auth } from "@/app/lib/auth";
 
 export default async function QuestionPracticePage({
   params,
 }: {
-  params: Promise<{ step: string; topic: string; subtopic: string; questionId: string }>;
+  params: Promise<{
+    step: string;
+    topic: string;
+    subtopic: string;
+    questionId: string;
+  }>;
 }) {
   const { step, topic, subtopic, questionId } = await params;
+  const session = await auth.api.getSession({
+    headers: await headers(), // you need to pass the headers object.
+  });
+  const userId = session?.user.id || ''
 
   // Single optimized query for all data
   const pageData = await getQuestionPageData(topic, subtopic, questionId);
@@ -159,7 +172,8 @@ export default async function QuestionPracticePage({
     notFound();
   }
 
-  const { topicName, subtopicName, currentQuestion, navigationQuestions } = pageData;
+  const { topicName, subtopicName, currentQuestion, navigationQuestions } =
+    pageData;
 
   // Transform the current question
   const question = transformQuestionData({
@@ -180,6 +194,7 @@ export default async function QuestionPracticePage({
 
   return (
     <QuestionPracticeScreen
+      userId={userId}
       question={question}
       topicName={topicName}
       subtopicName={subtopicName}

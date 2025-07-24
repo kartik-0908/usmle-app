@@ -120,13 +120,13 @@ const columns: ColumnDef<z.infer<typeof questionSchema>>[] = [
     cell: ({ row }) => (
       <div className="max-w-md">
         <div className="font-medium truncate">{row.original.title}</div>
-        <div className="flex items-center gap-2 mt-1">
+        {/* <div className="flex items-center gap-2 mt-1">
           {row.original.tags.map((tag) => (
             <Badge key={tag} variant="secondary" className="text-xs">
               {tag}
             </Badge>
           ))}
-        </div>
+        </div> */}
       </div>
     ),
     enableHiding: false,
@@ -241,7 +241,6 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof questionSchema>> }) {
 
 export function PracticeQuestionsTable({
   data: initialData,
-  topicName,
   subtopicName,
 }: {
   data: z.infer<typeof questionSchema>[];
