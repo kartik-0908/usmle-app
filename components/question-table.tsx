@@ -120,16 +120,32 @@ const columns: ColumnDef<z.infer<typeof questionSchema>>[] = [
     cell: ({ row }) => (
       <div className="max-w-md">
         <div className="font-medium truncate">{row.original.title}</div>
-        {/* <div className="flex items-center gap-2 mt-1">
-          {row.original.tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div> */}
       </div>
     ),
     enableHiding: false,
+  },
+   {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const params = useParams();
+      const step = params.step as string;
+      const topicSlug = params.topic as string;
+      const subtopicSlug = params.subtopic as string;
+      const questionId = row.original.id;
+
+      return (
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/dashboard/practice/${step}/${topicSlug}/${subtopicSlug}/question/${questionId}`}
+          >
+            <Button size="sm" variant="default">
+              Practice
+            </Button>
+          </Link>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "status",
@@ -189,29 +205,7 @@ const columns: ColumnDef<z.infer<typeof questionSchema>>[] = [
       </div>
     ),
   },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: ({ row }) => {
-      const params = useParams();
-      const step = params.step as string;
-      const topicSlug = params.topic as string;
-      const subtopicSlug = params.subtopic as string;
-      const questionId = row.original.id;
-
-      return (
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/dashboard/practice/${step}/${topicSlug}/${subtopicSlug}/question/${questionId}`}
-          >
-            <Button size="sm" variant="default">
-              Practice
-            </Button>
-          </Link>
-        </div>
-      );
-    },
-  },
+ 
 ];
 
 function DraggableRow({ row }: { row: Row<z.infer<typeof questionSchema>> }) {

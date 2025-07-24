@@ -161,8 +161,6 @@ Always include 3-4 relevant quick replies that help continue the learning conver
       temperature: 0.7,
     });
 
-    console.log(result)
-
     return result.toDataStreamResponse();
   } catch (error) {
     console.error("Error in study assistant API:", error);

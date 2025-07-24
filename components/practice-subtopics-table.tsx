@@ -29,11 +29,9 @@ import {
   IconChevronsLeft,
   IconChevronsRight,
   IconCircleCheckFilled,
-  IconDotsVertical,
   IconGripVertical,
   IconLayoutColumns,
   IconLoader,
-  IconBookmark,
 } from "@tabler/icons-react";
 import {
   ColumnDef,
@@ -54,13 +52,10 @@ import { z } from "zod";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -86,11 +81,6 @@ export const subTopicSchema = z.object({
   accuracy: z.number(),
   slug: z.string(),
 });
-
-function createSlug(name: string) {
-  return name.toLowerCase().replace(/\s+/g, "-");
-}
-
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
   const { attributes, listeners } = useSortable({
@@ -124,6 +114,27 @@ const columns: ColumnDef<z.infer<typeof subTopicSchema>>[] = [
     cell: ({ row }) => <div className="font-medium">{row.original.name}</div>,
     enableHiding: false,
   },
+   {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const params = useParams();
+      const step = params.step as string;
+      const topicSlug = params.topic as string;
+      const subtopicSlug = (row.original.slug);
+
+      return (
+        <div className="flex items-center gap-2">
+          <Link href={`/dashboard/practice/${step}/${topicSlug}/${subtopicSlug}`}>
+            <Button size="sm" variant="default">
+              Practice
+            </Button>
+          </Link>
+        
+        </div>
+      );
+    },
+  },
   {
     accessorKey: "progress",
     header: "Progress",
@@ -142,24 +153,6 @@ const columns: ColumnDef<z.infer<typeof subTopicSchema>>[] = [
       );
     },
   },
-  // {
-  //   accessorKey: "difficulty",
-  //   header: "Difficulty",
-  //   cell: ({ row }) => {
-  //     const difficulty = row.original.difficulty;
-  //     const variant =
-  //       difficulty === "Easy"
-  //         ? "default"
-  //         : difficulty === "Medium"
-  //           ? "secondary"
-  //           : "destructive";
-  //     return (
-  //       <Badge variant={variant} className="text-xs">
-  //         {difficulty}
-  //       </Badge>
-  //     );
-  //   },
-  // },
   {
     accessorKey: "status",
     header: "Status",
@@ -191,27 +184,7 @@ const columns: ColumnDef<z.infer<typeof subTopicSchema>>[] = [
       <div className="text-muted-foreground">{row.original.lastPracticed}</div>
     ),
   },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: ({ row }) => {
-      const params = useParams();
-      const step = params.step as string;
-      const topicSlug = params.topic as string;
-      const subtopicSlug = (row.original.slug);
-
-      return (
-        <div className="flex items-center gap-2">
-          <Link href={`/dashboard/practice/${step}/${topicSlug}/${subtopicSlug}`}>
-            <Button size="sm" variant="default">
-              Practice
-            </Button>
-          </Link>
-        
-        </div>
-      );
-    },
-  },
+ 
 ];
 
 function DraggableRow({ row }: { row: Row<z.infer<typeof subTopicSchema>> }) {
@@ -415,10 +388,6 @@ export function PracticeSubTopicsTable({
         </div>
 
         <div className="flex items-center justify-between px-4 py-4">
-          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
-          </div>
           <div className="flex w-full items-center gap-8 lg:w-fit">
             <div className="hidden items-center gap-2 lg:flex">
               <Label htmlFor="rows-per-page" className="text-sm font-medium">
