@@ -73,6 +73,7 @@ model Topic {
   UserTopicProgress UserTopicProgress[]
 
   @@unique([stepId, name])
+  @@index([slug])
   @@map("topics")
 }
 
@@ -93,6 +94,7 @@ model Subtopic {
   questionSubtopics QuestionSubtopic[]
 
   @@unique([topicId, name])
+  @@index([slug])
   @@map("subtopics")
 }
 
@@ -116,6 +118,7 @@ model Question {
   problemSetQuestions ProblemSetQuestion[]
 
   @@map("questions")
+  @@index([id])
 }
 
 model Option {

@@ -151,7 +151,7 @@ Choose relevant quick replies based on the context of your response. Examples:
 
 Always include 3-4 relevant quick replies that help continue the learning conversation.`;
 
-    console.log("System Prompt for Study Assistant:", systemPrompt);
+    // console.log("System Prompt for Study Assistant:", systemPrompt);
 
     const result = await streamText({
       model: azure('gpt-4.1'),
@@ -160,6 +160,8 @@ Always include 3-4 relevant quick replies that help continue the learning conver
       maxTokens: 600,
       temperature: 0.7,
     });
+
+    console.log(result)
 
     return result.toDataStreamResponse();
   } catch (error) {
