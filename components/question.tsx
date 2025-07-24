@@ -7,6 +7,9 @@ import {
   IconRefresh,
   IconChevronLeft,
   IconChevronRight,
+  IconGripVertical,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarRightCollapse,
 } from "@tabler/icons-react";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
@@ -61,6 +64,36 @@ export function QuestionPracticeScreen({
   const [showAnswer, setShowAnswer] = React.useState(false);
   const [isCorrect, setIsCorrect] = React.useState<boolean | null>(null);
   const [timeSpent, setTimeSpent] = React.useState(0);
+  
+  // Layout state - Start with default to avoid hydration mismatch
+  const [questionWidth, setQuestionWidth] = React.useState(66.67); // Default to 2/3 (66.67%)
+  const [isResizing, setIsResizing] = React.useState(false);
+  const [isMounted, setIsMounted] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Load saved layout preference after component mounts (client-side only)
+  React.useEffect(() => {
+    setIsMounted(true);
+    try {
+      const savedWidth = localStorage.getItem('questionPracticeWidth');
+      if (savedWidth) {
+        setQuestionWidth(parseFloat(savedWidth));
+      }
+    } catch (error) {
+      console.log('Could not load layout preference');
+    }
+  }, []);
+
+  // Save layout preference whenever it changes (only after mount)
+  React.useEffect(() => {
+    if (!isMounted) return; // Don't save during initial hydration
+    
+    try {
+      localStorage.setItem('questionPracticeWidth', questionWidth.toString());
+    } catch (error) {
+      console.log('Could not save layout preference');
+    }
+  }, [questionWidth, isMounted]);
 
   // Reset states when question changes
   React.useEffect(() => {
@@ -78,6 +111,49 @@ export function QuestionPracticeScreen({
 
     return () => clearInterval(timer);
   }, [question.id]); // Reset timer when question changes
+
+  // Handle mouse resize
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  const handleMouseMove = React.useCallback((e: MouseEvent) => {
+    if (!isResizing || !containerRef.current) return;
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const containerWidth = containerRect.width;
+    const mouseX = e.clientX - containerRect.left;
+    
+    // Calculate percentage (with bounds checking)
+    const newWidth = Math.max(30, Math.min(80, (mouseX / containerWidth) * 100));
+    setQuestionWidth(newWidth);
+  }, [isResizing]);
+
+  const handleMouseUp = React.useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  React.useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, handleMouseMove, handleMouseUp]);
+
+  // Preset width functions
+  const setPresetWidth = (width: number) => {
+    setQuestionWidth(width);
+  };
 
   const handleSubmit = () => {
     if (!selectedAnswer) return;
@@ -118,27 +194,27 @@ export function QuestionPracticeScreen({
   };
 
   const renderQuestionInput = () => {
-  const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F','G','H','I','J','K','L','M','N','O']; 
-  
-  return (
-    <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
-      {question.options?.map((option, index) => (
-        <div key={index} className="flex items-center space-x-2">
-          <RadioGroupItem value={option} id={`option-${index}`} />
-          <Label
-            htmlFor={`option-${index}`}
-            className="flex-1 cursor-pointer"
-          >
-            <span className="font-semibold mr-2">
-              {optionLabels[index]})
-            </span>
-            {option}
-          </Label>
-        </div>
-      ))}
-    </RadioGroup>
-  );
-};
+    const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F','G','H','I','J','K','L','M','N','O']; 
+    
+    return (
+      <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
+        {question.options?.map((option, index) => (
+          <div key={index} className="flex items-center space-x-2">
+            <RadioGroupItem value={option} id={`option-${index}`} />
+            <Label
+              htmlFor={`option-${index}`}
+              className="flex-1 cursor-pointer"
+            >
+              <span className="font-semibold mr-2">
+                {optionLabels[index]})
+              </span>
+              {option}
+            </Label>
+          </div>
+        ))}
+      </RadioGroup>
+    );
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -198,7 +274,7 @@ export function QuestionPracticeScreen({
             )}
           </div>
 
-          {/* Right - Timer */}
+          {/* Right - Timer and Layout Controls */}
           <div className="flex items-center gap-4">
             <Badge variant="outline" className="text-sm">
               Time: {formatTime(timeSpent)}
@@ -208,33 +284,42 @@ export function QuestionPracticeScreen({
                 Limit: {formatTime(question.timeLimit)}
               </Badge>
             )}
+            
+            {/* Layout preset buttons */}
+            <div className="flex items-center gap-1 ml-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPresetWidth(50)}
+                title="Split equally"
+              >
+                <IconLayoutSidebarLeftCollapse className="size-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPresetWidth(66.67)}
+                title="More space for question"
+              >
+                <IconLayoutSidebarRightCollapse className="size-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content with Resizable Layout */}
       <div className="container mx-auto px-4 pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Question */}
-          <div className="lg:col-span-2">
+        <div 
+          ref={containerRef}
+          className="flex gap-2 min-h-[600px]"
+        >
+          {/* Question Section */}
+          <div 
+            style={{ width: `${questionWidth}%` }}
+            className={`min-w-0 ${isMounted ? 'transition-all duration-200' : ''}`}
+          >
             <Card>
-              {/* <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{question.type}</Badge>
-                    <Badge className={getDifficultyColor(question.difficulty)}>
-                      {question.difficulty}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {question.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardHeader> */}
               <CardContent className="space-y-6">
                 {/* Question Image */}
                 {question.image && (
@@ -324,8 +409,21 @@ export function QuestionPracticeScreen({
             </Card>
           </div>
 
+          {/* Resizable Divider */}
+          <div
+            className={`w-2 cursor-col-resize flex items-center justify-center group hover:bg-border transition-colors ${
+              isResizing ? 'bg-border' : ''
+            }`}
+            onMouseDown={handleMouseDown}
+          >
+            <IconGripVertical className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </div>
+
           {/* AI Study Assistant Chat */}
-          <div>
+          <div 
+            style={{ width: `${100 - questionWidth}%` }}
+            className={`min-w-0 ${isMounted ? 'transition-all duration-200' : ''}`}
+          >
             <StudyAssistantChat
               question={question}
               userAnswer={selectedAnswer}
