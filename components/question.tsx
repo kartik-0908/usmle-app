@@ -122,11 +122,15 @@ export function QuestionPracticeScreen({
     if (!isResizing || !containerRef.current) return;
 
     const containerRect = containerRef.current.getBoundingClientRect();
-    const containerWidth = containerRect.width;
+    const containerWidth = containerRect.width - 4; // Account for gap (4px = gap-1)
     const mouseX = e.clientX - containerRect.left;
     
-    // Calculate percentage (with bounds checking)
-    const newWidth = Math.max(30, Math.min(80, (mouseX / containerWidth) * 100));
+    // Calculate percentage more accurately
+    let newWidth = (mouseX / containerWidth) * 100;
+    
+    // Apply bounds
+    newWidth = Math.max(25, Math.min(85, newWidth));
+    
     setQuestionWidth(newWidth);
   }, [isResizing]);
 
@@ -136,7 +140,7 @@ export function QuestionPracticeScreen({
 
   React.useEffect(() => {
     if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mousemove', handleMouseMove, { passive: false });
       document.addEventListener('mouseup', handleMouseUp);
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
@@ -312,12 +316,12 @@ export function QuestionPracticeScreen({
       <div className="container mx-auto px-4 pb-8">
         <div 
           ref={containerRef}
-          className="flex gap-2 min-h-[600px]"
+          className="flex gap-1 min-h-[600px]"
         >
           {/* Question Section */}
           <div 
             style={{ width: `${questionWidth}%` }}
-            className={`min-w-0 ${isMounted ? 'transition-all duration-200' : ''}`}
+            className={`min-w-0 ${isMounted && !isResizing ? 'transition-all duration-200' : ''}`}
           >
             <Card>
               <CardContent className="space-y-6">
@@ -411,18 +415,20 @@ export function QuestionPracticeScreen({
 
           {/* Resizable Divider */}
           <div
-            className={`w-2 cursor-col-resize flex items-center justify-center group hover:bg-border transition-colors ${
+            className={`w-1 cursor-col-resize flex items-center justify-center group relative hover:bg-border transition-colors ${
               isResizing ? 'bg-border' : ''
             }`}
             onMouseDown={handleMouseDown}
           >
-            <IconGripVertical className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+            {/* Expanded hit area for easier grabbing */}
+            <div className="absolute inset-y-0 -inset-x-2 cursor-col-resize" />
+            <IconGripVertical className="size-4 text-muted-foreground group-hover:text-foreground transition-colors relative z-10" />
           </div>
 
           {/* AI Study Assistant Chat */}
           <div 
             style={{ width: `${100 - questionWidth}%` }}
-            className={`min-w-0 ${isMounted ? 'transition-all duration-200' : ''}`}
+            className={`min-w-0 ${isMounted && !isResizing ? 'transition-all duration-200' : ''}`}
           >
             <StudyAssistantChat
               question={question}
