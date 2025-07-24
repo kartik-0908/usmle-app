@@ -142,24 +142,24 @@ const columns: ColumnDef<z.infer<typeof subTopicSchema>>[] = [
       );
     },
   },
-  {
-    accessorKey: "difficulty",
-    header: "Difficulty",
-    cell: ({ row }) => {
-      const difficulty = row.original.difficulty;
-      const variant =
-        difficulty === "Easy"
-          ? "default"
-          : difficulty === "Medium"
-            ? "secondary"
-            : "destructive";
-      return (
-        <Badge variant={variant} className="text-xs">
-          {difficulty}
-        </Badge>
-      );
-    },
-  },
+  // {
+  //   accessorKey: "difficulty",
+  //   header: "Difficulty",
+  //   cell: ({ row }) => {
+  //     const difficulty = row.original.difficulty;
+  //     const variant =
+  //       difficulty === "Easy"
+  //         ? "default"
+  //         : difficulty === "Medium"
+  //           ? "secondary"
+  //           : "destructive";
+  //     return (
+  //       <Badge variant={variant} className="text-xs">
+  //         {difficulty}
+  //       </Badge>
+  //     );
+  //   },
+  // },
   {
     accessorKey: "status",
     header: "Status",

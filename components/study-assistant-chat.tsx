@@ -64,6 +64,55 @@ const getCookie = (name: string): string | null => {
   return null;
 };
 
+// Function to parse quick replies from message content
+const parseQuickReplies = (
+  content: string
+): { content: string; quickReplies: string[] } => {
+  const quickReplyRegex = /\[QUICK_REPLIES\](.*?)\[\/QUICK_REPLIES\]/s;
+  const match = content.match(quickReplyRegex);
+
+  if (match) {
+    const quickRepliesText = match[1];
+    const quickReplies = quickRepliesText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith("- "))
+      .map((line) => line.substring(2).trim())
+      .filter((reply) => reply.length > 0);
+
+    const cleanContent = content.replace(quickReplyRegex, "").trim();
+    return { content: cleanContent, quickReplies };
+  }
+
+  return { content, quickReplies: [] };
+};
+
+// Quick Reply Buttons Component
+const QuickReplyButtons: React.FC<{
+  quickReplies: string[];
+  onQuickReply: (reply: string) => void;
+  disabled?: boolean;
+}> = ({ quickReplies, onQuickReply, disabled }) => {
+  if (quickReplies.length === 0) return null;
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {quickReplies.map((reply, index) => (
+        <Button
+          key={index}
+          variant="outline"
+          size="sm"
+          onClick={() => onQuickReply(reply)}
+          disabled={disabled}
+          className="text-xs h-8 px-3 bg-background hover:bg-muted border border-border/50 hover:border-border transition-colors"
+        >
+          {reply}
+        </Button>
+      ))}
+    </div>
+  );
+};
+
 export function StudyAssistantChat({
   question,
   userAnswer,
@@ -74,6 +123,13 @@ export function StudyAssistantChat({
   // Initialize voice mode from cookie, default to true
   const [isVoiceMode, setIsVoiceMode] = React.useState(true);
   const [isInitialized, setIsInitialized] = React.useState(false);
+
+  // Refs for auto-scroll functionality
+  const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+  const aiMessageRefs = React.useRef<{
+    [key: string]: HTMLDivElement | null;
+  }>({});
+  const lastAiMessageIdRef = React.useRef<string | null>(null);
 
   // Load voice mode preference from cookie on component mount
   React.useEffect(() => {
@@ -91,10 +147,6 @@ export function StudyAssistantChat({
     }
   }, [isVoiceMode, isInitialized]);
 
-  const handleVoiceModeToggle = (checked: boolean) => {
-    setIsVoiceMode(checked);
-  };
-
   const {
     messages,
     input,
@@ -109,7 +161,14 @@ export function StudyAssistantChat({
       {
         id: "initial",
         role: "assistant",
-        content: `Hi! How may i help you`,
+        content: `Hi! How may I help you with this question?
+
+[QUICK_REPLIES]
+- Explain this question
+- Give me a hint
+- What concepts should I know?
+- Break down the approach
+[/QUICK_REPLIES]`,
       },
     ],
     body: {
@@ -120,13 +179,77 @@ export function StudyAssistantChat({
         question: question.question,
         options: question.options,
         tags: question.tags,
-        explanation: question,
+        explanation: question.explanation,
         userAnswer,
         showAnswer,
         isCorrect,
       },
     },
   });
+
+  const scrollToAiMessage = React.useCallback((messageId: string) => {
+    const messageElement = aiMessageRefs.current[messageId];
+    if (messageElement) {
+      // Get the scroll container
+      const scrollContainer = scrollAreaRef.current?.querySelector(
+        "[data-radix-scroll-area-viewport]"
+      );
+      if (!scrollContainer) return;
+
+      // Get positions
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const messageRect = messageElement.getBoundingClientRect();
+
+      // Calculate scroll position to show the AI message with some padding from top
+      const scrollTop =
+        scrollContainer.scrollTop + messageRect.top - containerRect.top - 20;
+
+      scrollContainer.scrollTo({
+        top: scrollTop,
+        behavior: "smooth",
+      });
+    }
+  }, []);
+  // Auto-scroll to new AI messages
+  React.useEffect(() => {
+    // Find the latest AI message
+    const aiMessages = messages.filter((msg) => msg.role === "assistant");
+    if (aiMessages.length === 0) return;
+
+    const latestAiMessage = aiMessages[aiMessages.length - 1];
+
+    // Check if this is a new AI message (not just an update)
+    if (latestAiMessage.id !== lastAiMessageIdRef.current) {
+      lastAiMessageIdRef.current = latestAiMessage.id;
+
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        scrollToAiMessage(latestAiMessage.id);
+      }, 100);
+    }
+  }, [messages, scrollToAiMessage]);
+
+  // // Auto-scroll when component mounts and is initialized
+  // React.useEffect(() => {
+  //   if (isInitialized && !isVoiceMode) {
+  //     const userMessages = messages.filter((msg) => msg.role === "user");
+  //     if (userMessages.length > 0) {
+  //       scrollToLastUserMessage();
+  //     }
+  //   }
+  // }, [isInitialized, isVoiceMode, scrollToLastUserMessage]);
+
+  const handleVoiceModeToggle = (checked: boolean) => {
+    setIsVoiceMode(checked);
+  };
+
+  // Handle quick reply button clicks
+  const handleQuickReply = (reply: string) => {
+    append({
+      role: "user",
+      content: reply,
+    });
+  };
 
   // Don't render until we've loaded the cookie preference
   if (!isInitialized) {
@@ -186,7 +309,7 @@ export function StudyAssistantChat({
         ) : (
           // Text Mode - Show Chat Interface
           <>
-            <ScrollArea className="flex-1 min-h-0">
+            <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}>
               <div className="p-4">
                 <div className="space-y-4">
                   {messages.length === 0 ? (
@@ -207,28 +330,51 @@ export function StudyAssistantChat({
                       </div>
                     </div>
                   ) : (
-                    messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${
-                          message.role === "user"
-                            ? "justify-end"
-                            : "justify-start"
-                        }`}
-                      >
+                    messages.map((message) => {
+                      const { content, quickReplies } =
+                        message.role === "assistant"
+                          ? parseQuickReplies(message.content)
+                          : { content: message.content, quickReplies: [] };
+
+                      return (
                         <div
-                          className={`max-w-[85%] rounded-lg p-3 ${
+                          key={message.id}
+                          ref={
+                            message.role === "assistant"
+                              ? (el) => {
+                                  aiMessageRefs.current[message.id] = el;
+                                }
+                              : undefined
+                          }
+                          className={`flex ${
                             message.role === "user"
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-foreground"
+                              ? "justify-end"
+                              : "justify-start"
                           }`}
                         >
-                          <div className="text-sm whitespace-pre-wrap">
-                            <Markdown>{message.content}</Markdown>
+                          <div
+                            className={`max-w-[85%] rounded-lg p-3 ${
+                              message.role === "user"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-foreground"
+                            }`}
+                          >
+                            <div className="text-sm whitespace-pre-wrap">
+                              <Markdown>{content}</Markdown>
+                            </div>
+
+                            {/* Quick Reply Buttons for AI messages */}
+                            {message.role === "assistant" && (
+                              <QuickReplyButtons
+                                quickReplies={quickReplies}
+                                onQuickReply={handleQuickReply}
+                                disabled={isLoading}
+                              />
+                            )}
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
 
                   {isLoading && (

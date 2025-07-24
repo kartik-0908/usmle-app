@@ -212,8 +212,6 @@ export function QuestionPracticeScreen({
         </div>
       </div>
 
-      {/* Remove the separate navigation card section completely */}
-
       {/* Main Content */}
       <div className="container mx-auto px-4 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -251,7 +249,7 @@ export function QuestionPracticeScreen({
 
                 {/* Question Text */}
                 <div className="prose prose-sm max-w-none">
-                  <p className="text-lg leading-relaxed">{question.question}</p>
+                  <p className="text-sm leading-relaxed">{question.question}</p>
                 </div>
 
                 {/* Answer Input */}
