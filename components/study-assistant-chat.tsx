@@ -147,7 +147,8 @@ export function StudyAssistantChat({
   if (isPending) {
     return null;
   }
-  const [isVoiceMode, setIsVoiceMode] = React.useState(true);
+  const userId = session?.user.id;
+  const [isVoiceMode, setIsVoiceMode] = React.useState(false);
   const [isInitialized, setIsInitialized] = React.useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = React.useState(true); // ADD THIS LINE - Loading state for chat history
 
@@ -331,8 +332,9 @@ export function StudyAssistantChat({
 
   return (
     <Card className={`h-[600px] flex flex-col ${className}`}>
-      {/* Header with Mode Toggle */}
-      <CardHeader className="pb-3 flex-shrink-0">
+      {/* Header with Mode Toggle */} 
+      {(userId === 'rc0V4GqJVuyy7mXhFYXNpCub9QXJUReP' || userId === 'jDzDiX4gqcP3w6HH3QSpwYNC9tzbcOLB') && (
+ <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           {/* Mode Toggle */}
           <div className="flex items-center space-x-2">
@@ -358,6 +360,8 @@ export function StudyAssistantChat({
           </div>
         </div>
       </CardHeader>
+      )}
+     
 
       <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
         {/* Chat Messages */}
