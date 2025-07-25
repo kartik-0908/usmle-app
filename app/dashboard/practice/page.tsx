@@ -1,7 +1,17 @@
 import { getSteps } from "@/app/actions/topics";
+import { auth } from "@/app/lib/auth";
 import { StepCards } from "@/components/step-cards";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 export default async function Page() {
+  const session = await auth.api.getSession({
+    headers: await headers(), // you need to pass the headers object.
+  });
+  if (!session) {
+    redirect("/sign-in");
+  }
+
   const data = await getSteps();
   if (!data) {
     return (

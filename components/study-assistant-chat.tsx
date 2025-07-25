@@ -332,36 +332,36 @@ export function StudyAssistantChat({
 
   return (
     <Card className={`h-[600px] flex flex-col ${className}`}>
-      {/* Header with Mode Toggle */} 
-      {(userId === 'rc0V4GqJVuyy7mXhFYXNpCub9QXJUReP' || userId === 'jDzDiX4gqcP3w6HH3QSpwYNC9tzbcOLB') && (
- <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          {/* Mode Toggle */}
-          <div className="flex items-center space-x-2">
-            <Label
-              htmlFor="voice-toggle"
-              className="text-sm font-medium flex items-center gap-1"
-            >
-              <IconKeyboard className="size-4" />
-              Text
-            </Label>
-            <Switch
-              id="voice-toggle"
-              checked={isVoiceMode}
-              onCheckedChange={handleVoiceModeToggle}
-            />
-            <Label
-              htmlFor="voice-toggle"
-              className="text-sm font-medium flex items-center gap-1"
-            >
-              <IconMicrophone className="size-4" />
-              Voice
-            </Label>
+      {/* Header with Mode Toggle */}
+      {(userId === "rc0V4GqJVuyy7mXhFYXNpCub9QXJUReP" ||
+        userId === "jDzDiX4gqcP3w6HH3QSpwYNC9tzbcOLB") && (
+        <CardHeader className="pb-3 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            {/* Mode Toggle */}
+            <div className="flex items-center space-x-2">
+              <Label
+                htmlFor="voice-toggle"
+                className="text-sm font-medium flex items-center gap-1"
+              >
+                <IconKeyboard className="size-4" />
+                Text
+              </Label>
+              <Switch
+                id="voice-toggle"
+                checked={isVoiceMode}
+                onCheckedChange={handleVoiceModeToggle}
+              />
+              <Label
+                htmlFor="voice-toggle"
+                className="text-sm font-medium flex items-center gap-1"
+              >
+                <IconMicrophone className="size-4" />
+                Voice
+              </Label>
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
       )}
-     
 
       <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
         {/* Chat Messages */}

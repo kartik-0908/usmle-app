@@ -1,7 +1,14 @@
-import { redirect, RedirectType } from 'next/navigation'
+import { redirect, RedirectType } from "next/navigation";
+import { auth } from "./lib/auth";
+import { headers } from "next/headers";
 
-export default function Page() {
+export default async function Page() {
   // Redirect to the dashboard home page
-  return redirect('/dashboard/practice', RedirectType.replace)
+  const session = await auth.api.getSession({
+    headers: await headers(), // you need to pass the headers object.
+  });
+  if (!session) {
+    redirect("/sign-in");
+  }
+  return redirect("/dashboard/practice", RedirectType.replace);
 }
- 
