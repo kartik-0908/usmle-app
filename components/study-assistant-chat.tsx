@@ -18,6 +18,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import RealtimeVoiceAgent from "./voice";
+import { authClient } from "@/app/lib/auth-client";
 
 // Question schema for context
 export const practiceQuestionSchema = z.object({
@@ -113,6 +114,23 @@ const QuickReplyButtons: React.FC<{
   );
 };
 
+// ADD THIS FUNCTION - Load chat history from API
+const loadChatHistory = async (questionId: string) => {
+  try {
+    const response = await fetch(
+      `/api/study-assistant?questionId=${questionId}`
+    );
+    if (!response.ok) {
+      throw new Error("Failed to load chat history");
+    }
+    const data = await response.json();
+    return data.messages || [];
+  } catch (error) {
+    console.error("Error loading chat history:", error);
+    return [];
+  }
+};
+
 export function StudyAssistantChat({
   question,
   userAnswer,
@@ -121,8 +139,17 @@ export function StudyAssistantChat({
   className,
 }: StudyAssistantChatProps) {
   // Initialize voice mode from cookie, default to true
+  const {
+    data: session,
+    isPending, //loading state
+    refetch, //refetch the session
+  } = authClient.useSession();
+  if (isPending) {
+    return null;
+  }
   const [isVoiceMode, setIsVoiceMode] = React.useState(true);
   const [isInitialized, setIsInitialized] = React.useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = React.useState(true); // ADD THIS LINE - Loading state for chat history
 
   // Refs for auto-scroll functionality
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
@@ -155,22 +182,10 @@ export function StudyAssistantChat({
     isLoading,
     error,
     append,
+    setMessages, // ADD THIS LINE - Add setMessages to destructuring
   } = useChat({
     api: "/api/study-assistant",
-    initialMessages: [
-      {
-        id: "initial",
-        role: "assistant",
-        content: `Hi! How may I help you with this question?
-
-[QUICK_REPLIES]
-- Explain this question
-- Give me a hint
-- What concepts should I know?
-- Break down the approach
-[/QUICK_REPLIES]`,
-      },
-    ],
+    initialMessages: [], // CHANGE THIS LINE - Start with empty array instead of initial message
     body: {
       questionContext: {
         id: question.id,
@@ -186,6 +201,65 @@ export function StudyAssistantChat({
       },
     },
   });
+
+  // ADD THIS EFFECT - Load chat history when component mounts or question changes
+  React.useEffect(() => {
+    const loadHistory = async () => {
+      setIsLoadingHistory(true);
+      try {
+        const history = await loadChatHistory(question.id);
+
+        if (history.length > 0) {
+          // Convert database messages to chat format
+          const chatMessages = history.map((msg: any) => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
+          }));
+          setMessages(chatMessages);
+        } else {
+          // Set initial message if no history
+          setMessages([
+            {
+              id: "initial",
+              role: "assistant",
+              content: `Hi! How may I help you with this question?
+
+[QUICK_REPLIES]
+- Explain this question
+- Give me a hint
+- What concepts should I know?
+- Break down the approach
+[/QUICK_REPLIES]`,
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error("Failed to load chat history:", error);
+        // Set initial message on error
+        setMessages([
+          {
+            id: "initial",
+            role: "assistant",
+            content: `Hi! How may I help you with this question?
+
+[QUICK_REPLIES]
+- Explain this question
+- Give me a hint
+- What concepts should I know?
+- Break down the approach
+[/QUICK_REPLIES]`,
+          },
+        ]);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    if (question.id && session?.user.id) {
+      loadHistory();
+    }
+  }, [question.id, session, setMessages]);
 
   const scrollToAiMessage = React.useCallback((messageId: string) => {
     const messageElement = aiMessageRefs.current[messageId];
@@ -229,16 +303,6 @@ export function StudyAssistantChat({
     }
   }, [messages, scrollToAiMessage]);
 
-  // // Auto-scroll when component mounts and is initialized
-  // React.useEffect(() => {
-  //   if (isInitialized && !isVoiceMode) {
-  //     const userMessages = messages.filter((msg) => msg.role === "user");
-  //     if (userMessages.length > 0) {
-  //       scrollToLastUserMessage();
-  //     }
-  //   }
-  // }, [isInitialized, isVoiceMode, scrollToLastUserMessage]);
-
   const handleVoiceModeToggle = (checked: boolean) => {
     setIsVoiceMode(checked);
   };
@@ -251,14 +315,14 @@ export function StudyAssistantChat({
     });
   };
 
-  // Don't render until we've loaded the cookie preference
-  if (!isInitialized) {
+  // CHANGE THIS CONDITION - Don't render until we've loaded both cookie preference and chat history
+  if (!isInitialized || isLoadingHistory) {
     return (
       <Card className={`h-[600px] flex flex-col ${className}`}>
         <CardContent className="flex-1 flex items-center justify-center">
           <div className="text-center text-muted-foreground">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-            <p>Loading...</p>
+            <p>{isLoadingHistory ? "Loading chat history..." : "Loading..."}</p>
           </div>
         </CardContent>
       </Card>

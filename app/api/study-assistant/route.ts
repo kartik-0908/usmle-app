@@ -1,14 +1,111 @@
 // app/api/study-assistant/route.ts
 
+import { auth } from "@/app/lib/auth";
 import { azure } from "@/lib/ai/azure";
+import prisma from "@/lib/db";
 import { streamText } from "ai";
-import { NextRequest } from "next/server";
+import { headers } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
 
+// GET method to load chat history
+export async function GET(req: NextRequest) {
+  try {
+    console.log('inside sesion')
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const url = new URL(req.url);
+    const questionId = url.searchParams.get("questionId");
+
+    console.log('Question Id',questionId)
+
+    if (!questionId) {
+      return NextResponse.json(
+        { error: "Question ID required" },
+        { status: 400 }
+      );
+    }
+
+    const chatHistory = await prisma.chatMessage.findMany({
+      where: {
+        userId: session.user.id,
+        questionId: questionId,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+      select: {
+        id: true,
+        content: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    return NextResponse.json({ messages: chatHistory });
+  } catch (error) {
+    console.error("Load chat history error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+// Updated POST method with chat persistence
 export async function POST(req: NextRequest) {
   try {
     const { messages, questionContext } = await req.json();
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
 
-    // Create system prompt with question context
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+    const questionId = questionContext.id;
+
+    // Save the latest user message to database (if exists)
+    const userMessages = messages.filter((msg: any) => msg.role === "user");
+    if (userMessages.length > 0) {
+      const latestUserMessage = userMessages[userMessages.length - 1];
+
+      // Check if this message is already saved (to avoid duplicates)
+      const existingMessage = await prisma.chatMessage.findFirst({
+        where: {
+          userId: userId,
+          questionId: questionId,
+          content: latestUserMessage.content,
+          role: "user",
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 1,
+      });
+
+      // Only save if it's a new message
+      if (!existingMessage) {
+        await prisma.chatMessage.create({
+          data: {
+            content: latestUserMessage.content,
+            role: "user",
+            userId: userId,
+            questionId: questionId,
+          },
+        });
+      }
+    }
+
+    // Create system prompt with question context (your existing logic)
     const systemPrompt = `You are an AI study assistant helping a student understand a practice question. 
 
 Question Details:
@@ -27,15 +124,15 @@ You will be provided with the correct answer and its clinical/scientific explana
  Reveal all the logical steps at once and then ask the user in the end if they want to know anything further.
 ABSOLUTE RULES (never break)  
 1. **Clinical Scope** – Provide information strictly for learning. If asked for direct medical advice, respond:  
-   “I’m here to help you learn, not to diagnose or treat real patients. Please consult a qualified clinician.”  
-5. **No Disallowed Content** – Refuse illegal, discriminatory, or exam‑integrity‑violating requests (e.g., “Give me tomorrow’s NBME answers”).  
+   "I'm here to help you learn, not to diagnose or treat real patients. Please consult a qualified clinician."  
+5. **No Disallowed Content** – Refuse illegal, discriminatory, or exam‑integrity‑violating requests (e.g., "Give me tomorrow's NBME answers").  
 6. **Hide Chain‑of‑Thought** – Think step‑by‑step internally, but expose only polished, learner‑friendly explanations.  
 
 TONALITY  
-Encouraging, collegial, lightly witty. Celebrate insight; don’t patronize.  
+Encouraging, collegial, lightly witty. Celebrate insight; don't patronize.  
 
 
-Step 1: What’s happening to the patient right now?
+Step 1: What's happening to the patient right now?
 Patient presented with signs of an acute STEMI (ST elevations in V2–V4 = anteroseptal infarct).
 
 
@@ -81,7 +178,7 @@ Medium: β1 → increases heart rate and contractility
 High: α1 → vasoconstriction
 
 
-Sounds good on paper… but here’s the catch:
+Sounds good on paper… but here's the catch:
 
 
 ↑ HR = ↑ myocardial oxygen demand → bad for ischemic myocardium!
@@ -151,14 +248,31 @@ Choose relevant quick replies based on the context of your response. Examples:
 
 Always include 3-4 relevant quick replies that help continue the learning conversation.`;
 
-    // console.log("System Prompt for Study Assistant:", systemPrompt);
-
+    // Generate AI response using your existing logic
     const result = await streamText({
-      model: azure('gpt-4.1'),
+      model: azure("gpt-4.1"),
       system: systemPrompt,
       messages,
       maxTokens: 600,
       temperature: 0.7,
+      onFinish: async (event) => {
+        // Save the complete AI response when streaming finishes
+        try {
+          if (event.text && event.text.trim()) {
+            await prisma.chatMessage.create({
+              data: {
+                content: event.text,
+                role: "assistant",
+                userId: userId,
+                questionId: questionId,
+              },
+            });
+          }
+        } catch (saveError) {
+          console.error("Failed to save AI response:", saveError);
+          // Don't fail the response if save fails
+        }
+      },
     });
 
     return result.toDataStreamResponse();

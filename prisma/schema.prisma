@@ -28,6 +28,7 @@ model User {
   accounts          Account[]
   UserTopicProgress UserTopicProgress[]
   UserStepProgress  UserStepProgress[]
+  ChatMessage       ChatMessage[]
 
   @@map("users")
 }
@@ -103,12 +104,34 @@ model Subtopic {
   @@map("subtopics")
 }
 
+model ChatMessage {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  role      String // "user" or "assistant"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign keys
+  userId     String
+  questionId String
+
+  // Relationships
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  // Optimized indexes
+  @@index([userId, questionId, createdAt]) // For loading chat history
+  @@index([questionId, createdAt]) // For question-specific chats
+  @@index([userId, createdAt]) // For user chat history
+  @@map("chat_messages")
+}
+
 model Question {
   id           String       @id @default(cuid())
   title        String
   questionText String       @db.Text
   explanation  String?      @db.Text
-  o1answer     String? 
+  o1answer     String?
   difficulty   Difficulty   @default(MEDIUM)
   questionType QuestionType @default(MULTIPLE_CHOICE)
   isActive     Boolean      @default(true)
@@ -121,6 +144,7 @@ model Question {
   questionSubtopics   QuestionSubtopic[]
   attempts            UserAttempt[]
   problemSetQuestions ProblemSetQuestion[]
+  ChatMessage         ChatMessage[]
 
   // Optimized indexes
   @@index([isActive, createdAt]) // Critical: for your navigation queries
