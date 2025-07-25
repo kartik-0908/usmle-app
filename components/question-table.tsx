@@ -29,14 +29,10 @@ import {
   IconChevronsLeft,
   IconChevronsRight,
   IconCircleCheckFilled,
-  IconDotsVertical,
   IconGripVertical,
   IconLayoutColumns,
-  IconLoader,
-  IconPlus,
   IconBookmark,
   IconClock,
-  IconTarget,
   IconX,
 } from "@tabler/icons-react";
 import {

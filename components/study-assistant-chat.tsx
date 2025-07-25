@@ -10,7 +10,7 @@ import {
 import { useChat } from "@ai-sdk/react";
 import { z } from "zod";
 import Markdown from "react-markdown";
-
+import remarkGfm from "remark-gfm";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { Input } from "./ui/input";
@@ -360,7 +360,9 @@ export function StudyAssistantChat({
                             }`}
                           >
                             <div className="text-sm whitespace-pre-wrap">
-                              <Markdown>{content}</Markdown>
+                              <Markdown remarkPlugins={[remarkGfm]}>
+                                {content}
+                              </Markdown>
                             </div>
 
                             {/* Quick Reply Buttons for AI messages */}
