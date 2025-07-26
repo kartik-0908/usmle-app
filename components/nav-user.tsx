@@ -36,7 +36,6 @@ export function NavUser() {
   } = authClient.useSession();
   const { isMobile } = useSidebar();
   const router = useRouter()
-  console.log("Session data:", session);
   if (isPending) {
     return null;
   }
