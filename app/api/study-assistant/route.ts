@@ -255,7 +255,6 @@ Always include 3-4 relevant quick replies that help continue the learning conver
       model: azure("gpt-4.1"),
       system: systemPrompt,
       messages,
-      maxTokens: 600,
       temperature: 0.7,
       onFinish: async (event) => {
         // Save the complete AI response when streaming finishes
