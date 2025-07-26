@@ -35,15 +35,11 @@ export async function getSteps(): Promise<StepWithProgress[]> {
 }
 
 export async function getTopicsWithProgress(
-  step: string
+  step: string,
+  userId: string
 ): Promise<TopicWithProgress[]> {
   const timestamp = Date.now();
   console.log("starting fetching topics at", Date.now() - timestamp);
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  // console.log("Session in getTopicsWithProgress:", session);
-  const userId = session?.user?.id;
   console.log("userId fetched at", Date.now() - timestamp);
   try {
     // Fetch all active topics with their progress

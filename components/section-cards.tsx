@@ -20,8 +20,9 @@ import { useEffect, useState } from "react";
 import { TopicWithProgress } from "@/lib/types/topic";
 import { getTopicsWithProgress } from "@/app/actions/topics";
 
-export function TopicCards({step}:{
+export function TopicCards({step, userId}:{
   step: string;
+  userId: string
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [topics, setTopics] = useState<TopicWithProgress[]>([]);
@@ -32,7 +33,7 @@ export function TopicCards({step}:{
     async function fetchTopics() {
       try {
         setLoading(true);
-        const response = await getTopicsWithProgress(step);
+        const response = await getTopicsWithProgress(step, userId);
         setTopics(response);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
