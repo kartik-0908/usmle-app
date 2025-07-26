@@ -286,12 +286,9 @@ function getDominantDifficulty(
   return dominant as "Easy" | "Medium" | "Hard";
 }
 
-export async function getSubtopicData(topicSlug: string) {
+export async function getSubtopicData(topicSlug: string, userId: string) {
   // Get all subtopics for the topic
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  const userId = session?.user?.id;
+ 
   const subtopics = await prisma.subtopic.findMany({
     where: {
       topic: {
