@@ -297,11 +297,15 @@ export async function getSubtopicData(topicSlug: string, userId: string) {
       },
       isActive: true,
     },
-    include: {
+    select: {
+      name: true,
+      slug: true,
       questionSubtopics: {
-        include: {
+        select: {
           question: {
-            include: {
+            select: {
+              id: true,
+              difficulty: true,
               attempts: {
                 where: {
                   userId: userId,
