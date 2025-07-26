@@ -288,6 +288,7 @@ function getDominantDifficulty(
 
 export async function getSubtopicData(topicSlug: string, userId: string) {
   // Get all subtopics for the topic
+  const now = Date.now();
  
   const subtopics = await prisma.subtopic.findMany({
     where: {
@@ -318,6 +319,8 @@ export async function getSubtopicData(topicSlug: string, userId: string) {
       order: "asc",
     },
   });
+
+  console.log('db query finished at', Date.now()-now)
 
   // Transform the data for each subtopic
   const transformedData = subtopics.map((subtopic, index) => {
