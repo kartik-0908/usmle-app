@@ -74,6 +74,7 @@ model Topic {
 
   @@unique([stepId, name])
   // Optimized indexes
+  @@index([isActive, stepId, order])
   @@index([slug, isActive]) // Critical: for your slug+active lookups
   @@index([stepId, isActive, order]) // For step topics ordering
   @@index([isActive, createdAt]) // For active topics by date
@@ -180,6 +181,7 @@ model QuestionTopic {
 
   @@id([questionId, topicId])
   // Critical indexes for junction table performance
+  @@index([topicId, questionId])
   @@index([topicId]) // For topic -> questions lookups
   @@index([questionId]) // For question -> topics lookups
   @@index([topicId, createdAt]) // For ordered topic questions
