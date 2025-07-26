@@ -14,9 +14,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
   const { pathname } = request.nextUrl
-  console.log("Current pathname:", pathname);
+  // console.log("Current pathname:", pathname);
   if(pathname === '/'){
-    console.log("Redirecting from root to dashboard");
+    // console.log("Redirecting from root to dashboard");
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

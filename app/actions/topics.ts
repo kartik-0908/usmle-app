@@ -37,11 +37,14 @@ export async function getSteps(): Promise<StepWithProgress[]> {
 export async function getTopicsWithProgress(
   step: string
 ): Promise<TopicWithProgress[]> {
+  const timestamp =  Date.now();
+  console.log("starting fetching topics at", Date.now()-timestamp);
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  console.log("Session in getTopicsWithProgress:", session);
+  // console.log("Session in getTopicsWithProgress:", session);
   const userId = session?.user?.id;
+  console.log("userId fetched at", Date.now()-timestamp);
   try {
     // Fetch all active topics with their progress
     const topicsWithData = await prisma.topic.findMany({
@@ -72,8 +75,8 @@ export async function getTopicsWithProgress(
         order: "asc",
       },
     });
-
-    return topicsWithData.map((topic) => {
+    console.log("topics fetched from db", Date.now()-timestamp);
+    const data = topicsWithData.map((topic) => {
       const progress = topic.UserTopicProgress[0]; // Should be only one per user
       const totalQuestions = topic.questionTopics.length; // This now only counts active questions
       const practiced = progress?.questionsAttempted || 0;
@@ -115,6 +118,8 @@ export async function getTopicsWithProgress(
         streak,
       };
     });
+    console.log("data rearranged at",Date.now()-timestamp);
+    return data;
   } catch (error) {
     console.error("Error fetching topics with progress:", error);
     throw new Error("Failed to fetch topics");
