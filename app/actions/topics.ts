@@ -37,14 +37,14 @@ export async function getSteps(): Promise<StepWithProgress[]> {
 export async function getTopicsWithProgress(
   step: string
 ): Promise<TopicWithProgress[]> {
-  const timestamp =  Date.now();
-  console.log("starting fetching topics at", Date.now()-timestamp);
+  const timestamp = Date.now();
+  console.log("starting fetching topics at", Date.now() - timestamp);
   const session = await auth.api.getSession({
     headers: await headers(),
   });
   // console.log("Session in getTopicsWithProgress:", session);
   const userId = session?.user?.id;
-  console.log("userId fetched at", Date.now()-timestamp);
+  console.log("userId fetched at", Date.now() - timestamp);
   try {
     // Fetch all active topics with their progress
     const topicsWithData = await prisma.topic.findMany({
@@ -52,12 +52,27 @@ export async function getTopicsWithProgress(
         isActive: true,
         step: {
           slug: step,
+          isActive: true,
         },
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        order: true,
+        stepId: true,
         UserTopicProgress: {
           where: {
             userId: userId,
+          },
+          select: {
+            questionsAttempted: true,
+            questionsCorrect: true,
+            totalTimeSpent: true,
+            lastPracticedAt: true,
+            streak: true,
+            bestStreak: true,
+            // Only select fields you actually use
           },
         },
         questionTopics: {
@@ -66,16 +81,30 @@ export async function getTopicsWithProgress(
               isActive: true,
             },
           },
-          include: {
-            question: true,
-          },
         },
       },
+      // include: {
+      //   UserTopicProgress: {
+      //     where: {
+      //       userId: userId,
+      //     },
+      //   },
+      //   questionTopics: {
+      //     where: {
+      //       question: {
+      //         isActive: true,
+      //       },
+      //     },
+      //     include: {
+      //       question: true,
+      //     },
+      //   },
+      // },
       orderBy: {
         order: "asc",
       },
     });
-    console.log("topics fetched from db", Date.now()-timestamp);
+    console.log("topics fetched from db", Date.now() - timestamp);
     const data = topicsWithData.map((topic) => {
       const progress = topic.UserTopicProgress[0]; // Should be only one per user
       const totalQuestions = topic.questionTopics.length; // This now only counts active questions
@@ -118,7 +147,7 @@ export async function getTopicsWithProgress(
         streak,
       };
     });
-    console.log("data rearranged at",Date.now()-timestamp);
+    console.log("data rearranged at", Date.now() - timestamp);
     return data;
   } catch (error) {
     console.error("Error fetching topics with progress:", error);
