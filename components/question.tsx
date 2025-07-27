@@ -224,7 +224,7 @@ export function QuestionPracticeScreen({
 
     const targetQuestion = allQuestions[questionIndex];
     if (topicSlug && subtopicSlug) {
-      router.prefetch(
+      router.push(
         `/dashboard/practice/${stepSlug}/${topicSlug}/${subtopicSlug}/question/${targetQuestion.id}`
       );
     }
