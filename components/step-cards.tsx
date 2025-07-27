@@ -1,4 +1,3 @@
-"use client";
 import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
 
