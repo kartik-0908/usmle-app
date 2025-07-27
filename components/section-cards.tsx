@@ -16,34 +16,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { TopicWithProgress } from "@/lib/types/topic";
-import { getTopicsWithProgress } from "@/app/actions/topics";
 
-export function TopicCards({step, userId}:{
+export function TopicCards({
+  step,
+  topics,
+}: {
   step: string;
-  userId: string
+  topics: TopicWithProgress[];
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [topics, setTopics] = useState<TopicWithProgress[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchTopics() {
-      try {
-        setLoading(true);
-        const response = await getTopicsWithProgress(step, userId);
-        setTopics(response);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchTopics();
-  }, []);
 
   const filteredTopics = topics.filter((topic) =>
     topic.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -59,42 +42,6 @@ export function TopicCards({step, userId}:{
         return <IconMinus className="size-4 text-gray-500" />;
     }
   };
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="px-4 lg:px-6">
-          <div className="relative max-w-md">
-            <div className="w-full h-10 bg-gray-200 rounded-lg animate-pulse" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className="h-48 bg-gray-200 rounded-lg animate-pulse"
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="px-4 lg:px-6">
-        <div className="text-center py-8">
-          <p className="text-red-600">Error: {error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -148,7 +95,9 @@ export function TopicCards({step, userId}:{
                     <span className="line-clamp-1 flex-1">{topic.note}</span>
                     {getTrendIcon(topic.trend)}
                   </div>
-                  <div className="text-muted-foreground line-clamp-1 w-full">{topic.detail}</div>
+                  <div className="text-muted-foreground line-clamp-1 w-full">
+                    {topic.detail}
+                  </div>
                   {topic.streak > 0 && (
                     <div className="text-xs text-orange-600 font-medium">
                       🔥 {topic.streak} day streak
