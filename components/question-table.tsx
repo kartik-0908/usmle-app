@@ -178,20 +178,20 @@ const columns: ColumnDef<z.infer<typeof questionSchema>>[] = [
       <div className="text-center font-medium">{row.original.attempts}</div>
     ),
   },
-  {
-    accessorKey: "timeSpent",
-    header: () => <div className="text-center">Time Spent</div>,
-    cell: ({ row }) => {
-      const minutes = Math.floor(row.original.timeSpent / 60);
-      const seconds = row.original.timeSpent % 60;
-      return (
-        <div className="text-center flex items-center justify-center gap-1">
-          <IconClock className="size-3" />
-          {minutes}m {seconds}s
-        </div>
-      );
-    },
-  },
+  // {
+  //   accessorKey: "timeSpent",
+  //   header: () => <div className="text-center">Time Spent</div>,
+  //   cell: ({ row }) => {
+  //     const minutes = Math.floor(row.original.timeSpent / 60);
+  //     const seconds = row.original.timeSpent % 60;
+  //     return (
+  //       <div className="text-center flex items-center justify-center gap-1">
+  //         <IconClock className="size-3" />
+  //         {minutes}m {seconds}s
+  //       </div>
+  //     );
+  //   },
+  // },
   {
     accessorKey: "lastAttempted",
     header: "Last Attempted",

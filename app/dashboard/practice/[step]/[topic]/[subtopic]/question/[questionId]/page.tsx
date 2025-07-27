@@ -2,7 +2,7 @@
 
 import { QuestionPracticeScreen } from "@/components/question";
 import prisma from "@/lib/db";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 // Type definitions
 type QuestionData = {
@@ -156,6 +156,9 @@ export default async function QuestionPracticePage({
   const session = await auth.api.getSession({
     headers: await headers(), // you need to pass the headers object.
   });
+  if(!session){
+    redirect('/sign-in')
+  }
   const userId = session?.user.id || "";
 
   // Single optimized query for all data
