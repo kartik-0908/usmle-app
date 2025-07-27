@@ -307,36 +307,55 @@ export function QuestionPracticeScreen({
           <div className="flex items-center gap-4">
             {totalQuestions > 1 && (
               <>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  // onClick={handlePrevious}
-                  disabled={currentQuestionIndex === 0}
-                >
-                  <Link
-                    prefetch={true}
-                    href={`/dashboard/practice/${stepSlug}/${topicSlug}/${subtopicSlug}/question/${allQuestions[currentQuestionIndex - 1].id}`}
-                  >
+                {currentQuestionIndex === 0 ? (
+                  <Button variant="outline" size="sm" disabled={true}>
                     <IconChevronLeft className="size-4 mr-1" />
                     Previous
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  // onClick={handleNext}
-                  disabled={currentQuestionIndex === totalQuestions - 1}
-                >
-                  <Link
-                    prefetch={true}
-                    href={`/dashboard/practice/${stepSlug}/${topicSlug}/${subtopicSlug}/question/${allQuestions[currentQuestionIndex + 1].id}`}
+                  </Button>
+                ) : (
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    disabled={currentQuestionIndex === 0}
                   >
+                    <Link
+                      prefetch={true}
+                      href={
+                        currentQuestionIndex === 0
+                          ? "#"
+                          : `/dashboard/practice/${stepSlug}/${topicSlug}/${subtopicSlug}/question/${allQuestions[currentQuestionIndex - 1].id}`
+                      }
+                    >
+                      <IconChevronLeft className="size-4 mr-1" />
+                      Previous
+                    </Link>
+                  </Button>
+                )}
+                {currentQuestionIndex === totalQuestions - 1 ? (
+                  <Button variant="outline" size="sm" disabled={true}>
                     Next
                     <IconChevronRight className="size-4 ml-1" />
-                  </Link>
-                </Button>
+                  </Button>
+                ) : (
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Link
+                      prefetch={true}
+                      href={
+                        currentQuestionIndex === totalQuestions - 1
+                          ? "#"
+                          : `/dashboard/practice/${stepSlug}/${topicSlug}/${subtopicSlug}/question/${allQuestions[currentQuestionIndex + 1].id}`
+                      }
+                    >
+                      Next
+                      <IconChevronRight className="size-4 ml-1" />
+                    </Link>
+                  </Button>
+                )}
               </>
             )}
           </div>
