@@ -4,12 +4,8 @@ import { StepWithProgress, TopicWithProgress } from "@/lib/types/topic";
 import { headers } from "next/headers";
 import { auth } from "../lib/auth";
 
-export async function getSteps(): Promise<StepWithProgress[]> {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  console.log("Session in getStepsWithProgress:", session);
-  const userId = session?.user?.id;
+export async function getSteps(userId: string): Promise<StepWithProgress[]> {
+  
   try {
     // Fetch all active topics with their progress
     const steps = await prisma.step.findMany({

@@ -24,8 +24,6 @@ import { authClient } from "@/app/lib/auth-client";
 export const practiceQuestionSchema = z.object({
   id: z.string(),
   title: z.string(),
-  type: z.enum(["MCQ", "True/False", "Fill in the blank", "Short Answer"]),
-  difficulty: z.enum(["Easy", "Medium", "Hard"]),
   question: z.string(),
   options: z.array(z.string()).optional(),
   correctAnswer: z.string(),
@@ -190,8 +188,6 @@ export function StudyAssistantChat({
     body: {
       questionContext: {
         id: question.id,
-        type: question.type,
-        difficulty: question.difficulty,
         question: question.question,
         options: question.options,
         tags: question.tags,

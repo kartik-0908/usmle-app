@@ -8,15 +8,12 @@ import { notFound } from "next/navigation";
 type QuestionData = {
   id: string;
   title: string;
-  type: "MCQ" | "True/False" | "Short Answer" | "Fill in the blank";
-  difficulty: "Easy" | "Medium" | "Hard";
   question: string;
   options?: string[];
   correctAnswer: string;
   explanation: string;
   tags: string[];
   image?: string;
-  timeLimit: number;
 };
 
 // Optimized function to get all required data in minimal queries
@@ -120,14 +117,11 @@ function transformQuestionData(dbQuestion: any): QuestionData {
   return {
     id: question.id,
     title: question.title,
-    type: "MCQ",
-    difficulty: "Medium",
     question: question.questionText,
     options: questionOptions,
     correctAnswer,
     explanation: question.explanation || "",
     tags,
-    timeLimit: 120,
   };
 }
 
@@ -136,8 +130,6 @@ function transformNavigationQuestions(questions: any[]): QuestionData[] {
   return questions.map((q) => ({
     id: q.id,
     title: q.title,
-    type: "MCQ" as const,
-    difficulty: "Medium" as const, // You might want to add this field to your select
     question: "", // Empty for navigation - not needed
     correctAnswer: "", // Empty for navigation - not needed
     explanation: "", // Empty for navigation - not needed
@@ -172,7 +164,7 @@ export default async function QuestionPracticePage({
     notFound();
   }
 
-  const { topicName, subtopicName, currentQuestion, navigationQuestions } =
+  const { currentQuestion, navigationQuestions } =
     pageData;
 
   // Transform the current question
@@ -196,8 +188,6 @@ export default async function QuestionPracticePage({
     <QuestionPracticeScreen
       userId={userId}
       question={question}
-      topicName={topicName}
-      subtopicName={subtopicName}
       currentQuestionIndex={currentQuestionIndex}
       totalQuestions={totalQuestions}
       allQuestions={allQuestionsInOrder}

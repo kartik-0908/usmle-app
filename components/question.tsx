@@ -25,15 +25,12 @@ import { StudyAssistantChat } from "./study-assistant-chat";
 export const practiceQuestionSchema = z.object({
   id: z.string(), // Changed to string for cuid
   title: z.string(),
-  type: z.enum(["MCQ", "True/False", "Fill in the blank", "Short Answer"]),
-  difficulty: z.enum(["Easy", "Medium", "Hard"]),
   question: z.string(),
   options: z.array(z.string()).optional(),
   correctAnswer: z.string(),
   explanation: z.string(),
   tags: z.array(z.string()),
   image: z.string().optional(),
-  timeLimit: z.number().optional(), // in seconds
 });
 
 type QuestionData = z.infer<typeof practiceQuestionSchema>;
@@ -41,8 +38,6 @@ type QuestionData = z.infer<typeof practiceQuestionSchema>;
 interface QuestionPracticeScreenProps {
   question: QuestionData;
   userId: string; // Add userId prop
-  topicName?: string;
-  subtopicName?: string;
   currentQuestionIndex?: number;
   totalQuestions?: number;
   allQuestions?: QuestionData[];
@@ -260,7 +255,7 @@ export function QuestionPracticeScreen({
               className={`flex-1 cursor-pointer ${showAnswer ? 'cursor-default' : ''}`}
             >
               <span className="font-semibold mr-2">
-                {optionLabels[index]})
+                {optionLabels[index]}
               </span>
               {option}
             </Label>
@@ -330,14 +325,6 @@ export function QuestionPracticeScreen({
 
           {/* Right - Timer and Layout Controls */}
           <div className="flex items-center gap-4">
-            <Badge variant="outline" className="text-sm">
-              Time: {formatTime(timeSpent)}
-            </Badge>
-            {question.timeLimit && (
-              <Badge variant="secondary" className="text-sm">
-                Limit: {formatTime(question.timeLimit)}
-              </Badge>
-            )}
             
             {/* Layout preset buttons */}
             <div className="flex items-center gap-1 ml-4">
