@@ -224,7 +224,7 @@ export function QuestionPracticeScreen({
 
     const targetQuestion = allQuestions[questionIndex];
     if (topicSlug && subtopicSlug) {
-      router.push(
+      router.prefetch(
         `/dashboard/practice/${stepSlug}/${topicSlug}/${subtopicSlug}/question/${targetQuestion.id}`
       );
     }
@@ -280,7 +280,8 @@ export function QuestionPracticeScreen({
           <div className="flex items-center gap-4">
             {totalQuestions > 1 && (
               <>
-                <Button
+             
+                <Button asChild
                   variant="outline"
                   size="sm"
                   onClick={handlePrevious}

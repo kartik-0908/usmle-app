@@ -132,7 +132,7 @@ const columns: ColumnDef<z.infer<typeof questionSchema>>[] = [
 
       return (
         <div className="flex items-center gap-2">
-          <Link
+          <Link prefetch={true}
             href={`/dashboard/practice/${step}/${topicSlug}/${subtopicSlug}/question/${questionId}`}
           >
             <Button size="sm" variant="default">
