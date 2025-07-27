@@ -145,7 +145,7 @@ export function StudyAssistantChat({
   if (isPending) {
     return null;
   }
-  const userId = session?.user.id;
+
   const [isVoiceMode, setIsVoiceMode] = React.useState(false);
   const [isInitialized, setIsInitialized] = React.useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = React.useState(true); // ADD THIS LINE - Loading state for chat history
@@ -325,6 +325,8 @@ export function StudyAssistantChat({
       </Card>
     );
   }
+
+  const userId = session?.user.id;
 
   return (
     <Card className={`h-[600px] flex flex-col ${className}`}>

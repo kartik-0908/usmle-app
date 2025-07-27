@@ -21,6 +21,7 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
 import { StudyAssistantChat } from "./study-assistant-chat";
+import Link from "next/link";
 
 export const practiceQuestionSchema = z.object({
   id: z.string(), // Changed to string for cuid
@@ -62,7 +63,7 @@ export function QuestionPracticeScreen({
   const [isCorrect, setIsCorrect] = React.useState<boolean | null>(null);
   const [timeSpent, setTimeSpent] = React.useState(0);
   const [isSubmitting, setIsSubmitting] = React.useState(false); // Add loading state
-  
+
   // Layout state - Start with default to avoid hydration mismatch
   const [questionWidth, setQuestionWidth] = React.useState(66.67); // Default to 2/3 (66.67%)
   const [isResizing, setIsResizing] = React.useState(false);
@@ -73,23 +74,23 @@ export function QuestionPracticeScreen({
   React.useEffect(() => {
     setIsMounted(true);
     try {
-      const savedWidth = localStorage.getItem('questionPracticeWidth');
+      const savedWidth = localStorage.getItem("questionPracticeWidth");
       if (savedWidth) {
         setQuestionWidth(parseFloat(savedWidth));
       }
     } catch (error) {
-      console.log('Could not load layout preference');
+      console.log("Could not load layout preference");
     }
   }, []);
 
   // Save layout preference whenever it changes (only after mount)
   React.useEffect(() => {
     if (!isMounted) return; // Don't save during initial hydration
-    
+
     try {
-      localStorage.setItem('questionPracticeWidth', questionWidth.toString());
+      localStorage.setItem("questionPracticeWidth", questionWidth.toString());
     } catch (error) {
-      console.log('Could not save layout preference');
+      console.log("Could not save layout preference");
     }
   }, [questionWidth, isMounted]);
 
@@ -117,21 +118,24 @@ export function QuestionPracticeScreen({
     setIsResizing(true);
   };
 
-  const handleMouseMove = React.useCallback((e: MouseEvent) => {
-    if (!isResizing || !containerRef.current) return;
+  const handleMouseMove = React.useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing || !containerRef.current) return;
 
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const containerWidth = containerRect.width - 4; // Account for gap (4px = gap-1)
-    const mouseX = e.clientX - containerRect.left;
-    
-    // Calculate percentage more accurately
-    let newWidth = (mouseX / containerWidth) * 100;
-    
-    // Apply bounds
-    newWidth = Math.max(25, Math.min(85, newWidth));
-    
-    setQuestionWidth(newWidth);
-  }, [isResizing]);
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const containerWidth = containerRect.width - 4; // Account for gap (4px = gap-1)
+      const mouseX = e.clientX - containerRect.left;
+
+      // Calculate percentage more accurately
+      let newWidth = (mouseX / containerWidth) * 100;
+
+      // Apply bounds
+      newWidth = Math.max(25, Math.min(85, newWidth));
+
+      setQuestionWidth(newWidth);
+    },
+    [isResizing]
+  );
 
   const handleMouseUp = React.useCallback(() => {
     setIsResizing(false);
@@ -139,17 +143,19 @@ export function QuestionPracticeScreen({
 
   React.useEffect(() => {
     if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove, { passive: false });
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
+      document.addEventListener("mousemove", handleMouseMove, {
+        passive: false,
+      });
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
     }
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     };
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
@@ -159,12 +165,16 @@ export function QuestionPracticeScreen({
   };
 
   // Function to save user attempt to database
-  const saveUserAttempt = async (selectedAnswer: string, isCorrect: boolean, timeSpent: number) => {
+  const saveUserAttempt = async (
+    selectedAnswer: string,
+    isCorrect: boolean,
+    timeSpent: number
+  ) => {
     try {
-      const response = await fetch('/api/user-attempts', {
-        method: 'POST',
+      const response = await fetch("/api/user-attempts", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId,
@@ -176,14 +186,14 @@ export function QuestionPracticeScreen({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save attempt');
+        throw new Error("Failed to save attempt");
       }
 
       const result = await response.json();
-      console.log('Attempt saved successfully:', result);
+      console.log("Attempt saved successfully:", result);
       return result;
     } catch (error) {
-      console.error('Error saving attempt:', error);
+      console.error("Error saving attempt:", error);
       // You might want to show a toast notification here
       throw error;
     }
@@ -193,7 +203,7 @@ export function QuestionPracticeScreen({
     if (!selectedAnswer || isSubmitting) return;
 
     setIsSubmitting(true);
-    
+
     try {
       const correct = selectedAnswer === question.correctAnswer;
       setIsCorrect(correct);
@@ -201,9 +211,8 @@ export function QuestionPracticeScreen({
 
       // Save the attempt to database
       await saveUserAttempt(selectedAnswer, correct, timeSpent);
-      
     } catch (error) {
-      console.error('Failed to save attempt:', error);
+      console.error("Failed to save attempt:", error);
       // Still show the answer even if saving failed
       // You might want to show an error message to the user
     } finally {
@@ -243,20 +252,38 @@ export function QuestionPracticeScreen({
   };
 
   const renderQuestionInput = () => {
-    const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F','G','H','I','J','K','L','M','N','O']; 
-    
+    const optionLabels = [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "O",
+    ];
+
     return (
       <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
         {question.options?.map((option, index) => (
           <div key={index} className="flex items-center space-x-2">
-            <RadioGroupItem value={option} id={`option-${index}`} disabled={showAnswer} />
+            <RadioGroupItem
+              value={option}
+              id={`option-${index}`}
+              disabled={showAnswer}
+            />
             <Label
               htmlFor={`option-${index}`}
-              className={`flex-1 cursor-pointer ${showAnswer ? 'cursor-default' : ''}`}
+              className={`flex-1 cursor-pointer ${showAnswer ? "cursor-default" : ""}`}
             >
-              <span className="font-semibold mr-2">
-                {optionLabels[index]}
-              </span>
+              <span className="font-semibold mr-2">{optionLabels[index]}</span>
               {option}
             </Label>
           </div>
@@ -280,24 +307,35 @@ export function QuestionPracticeScreen({
           <div className="flex items-center gap-4">
             {totalQuestions > 1 && (
               <>
-             
                 <Button
+                  asChild
                   variant="outline"
                   size="sm"
-                  onClick={handlePrevious}
+                  // onClick={handlePrevious}
                   disabled={currentQuestionIndex === 0}
                 >
-                  <IconChevronLeft className="size-4 mr-1" />
-                  Previous
+                  <Link
+                    prefetch={true}
+                    href={`/dashboard/practice/${stepSlug}/${topicSlug}/${subtopicSlug}/question/${allQuestions[currentQuestionIndex - 1].id}`}
+                  >
+                    <IconChevronLeft className="size-4 mr-1" />
+                    Previous
+                  </Link>
                 </Button>
                 <Button
+                  asChild
                   variant="outline"
                   size="sm"
-                  onClick={handleNext}
+                  // onClick={handleNext}
                   disabled={currentQuestionIndex === totalQuestions - 1}
                 >
-                  Next
-                  <IconChevronRight className="size-4 ml-1" />
+                  <Link
+                    prefetch={true}
+                    href={`/dashboard/practice/${stepSlug}/${topicSlug}/${subtopicSlug}/question/${allQuestions[currentQuestionIndex + 1].id}`}
+                  >
+                    Next
+                    <IconChevronRight className="size-4 ml-1" />
+                  </Link>
                 </Button>
               </>
             )}
@@ -326,7 +364,6 @@ export function QuestionPracticeScreen({
 
           {/* Right - Timer and Layout Controls */}
           <div className="flex items-center gap-4">
-            
             {/* Layout preset buttons */}
             <div className="flex items-center gap-1 ml-4">
               <Button
@@ -352,14 +389,11 @@ export function QuestionPracticeScreen({
 
       {/* Main Content with Resizable Layout */}
       <div className="container mx-auto px-4 pb-8">
-        <div 
-          ref={containerRef}
-          className="flex gap-1 min-h-[600px]"
-        >
+        <div ref={containerRef} className="flex gap-1 min-h-[600px]">
           {/* Question Section */}
-          <div 
+          <div
             style={{ width: `${questionWidth}%` }}
-            className={`min-w-0 ${isMounted && !isResizing ? 'transition-all duration-200' : ''}`}
+            className={`min-w-0 ${isMounted && !isResizing ? "transition-all duration-200" : ""}`}
           >
             <Card>
               <CardContent className="space-y-6">
@@ -395,7 +429,7 @@ export function QuestionPracticeScreen({
                       disabled={!selectedAnswer || isSubmitting}
                       className="px-8"
                     >
-                      {isSubmitting ? 'Submitting...' : 'Submit Answer'}
+                      {isSubmitting ? "Submitting..." : "Submit Answer"}
                     </Button>
                   ) : (
                     <Button
@@ -454,7 +488,7 @@ export function QuestionPracticeScreen({
           {/* Resizable Divider */}
           <div
             className={`w-1 cursor-col-resize flex items-center justify-center group relative hover:bg-border transition-colors ${
-              isResizing ? 'bg-border' : ''
+              isResizing ? "bg-border" : ""
             }`}
             onMouseDown={handleMouseDown}
           >
@@ -464,9 +498,9 @@ export function QuestionPracticeScreen({
           </div>
 
           {/* AI Study Assistant Chat */}
-          <div 
+          <div
             style={{ width: `${100 - questionWidth}%` }}
-            className={`min-w-0 ${isMounted && !isResizing ? 'transition-all duration-200' : ''}`}
+            className={`min-w-0 ${isMounted && !isResizing ? "transition-all duration-200" : ""}`}
           >
             <StudyAssistantChat
               question={question}
