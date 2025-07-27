@@ -1,7 +1,5 @@
-import { getSteps } from "@/app/actions/topics";
 import { auth } from "@/app/lib/auth";
 import { StepCards } from "@/components/step-cards";
-import { unstable_cache } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -12,19 +10,21 @@ export default async function Page() {
   if (!session) {
     redirect("/sign-in");
   }
-  const userId = session.user.id;
 
-  const getCachedSteps = unstable_cache(
-    async () => {
-      return getSteps(userId);
-    },
-    [],
+  const data = [
     {
-      revalidate: 3600,
-    }
-  );
-
-  const data = await getCachedSteps();
+      id: "0b40bcf0-fd3e-4002-9979-9d3063653223",
+      name: "Step-1",
+      slug: "basic-sciences",
+      description: "Foundational medical sciences and organ systems",
+    },
+    {
+      id: "a12bc377-b97c-4a62-9f74-a86cc82fdcf7",
+      name: "Step-2",
+      slug: "clinical-sciences",
+      description: "Clinical medicine and physician skills",
+    },
+  ];
 
   if (!data) {
     return (
