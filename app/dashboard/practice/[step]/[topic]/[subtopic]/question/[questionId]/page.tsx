@@ -140,6 +140,7 @@ function transformNavigationQuestions(questions: any[]): QuestionData[] {
 }
 import { headers } from "next/headers";
 import { auth } from "@/app/lib/auth";
+import { unstable_cache } from "next/cache";
 
 export default async function QuestionPracticePage({
   params,
@@ -155,17 +156,25 @@ export default async function QuestionPracticePage({
   const session = await auth.api.getSession({
     headers: await headers(), // you need to pass the headers object.
   });
-  const userId = session?.user.id || ''
+  const userId = session?.user.id || "";
 
   // Single optimized query for all data
-  const pageData = await getQuestionPageData(topic, subtopic, questionId);
+  const getCachedPageData = unstable_cache(
+    async () => {
+      return getQuestionPageData(topic, subtopic, questionId);
+    },
+    [questionId],
+    {
+      revalidate: 3600,
+    }
+  );
+  const pageData = await getCachedPageData();
 
   if (!pageData) {
     notFound();
   }
 
-  const { currentQuestion, navigationQuestions } =
-    pageData;
+  const { currentQuestion, navigationQuestions } = pageData;
 
   // Transform the current question
   const question = transformQuestionData({
