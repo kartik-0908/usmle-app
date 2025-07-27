@@ -30,6 +30,7 @@ export function StepCards({
           data.map((step) => (
             <Link
               key={step.id}
+              prefetch={true}
               href={`/dashboard/practice/${step.slug}`}
               className="group"
             >
