@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Mail, BookOpen, Send } from "lucide-react";
+import { Mail, BookOpen, Send, MessageCircle, ExternalLink } from "lucide-react";
 
 import {
   Card,
@@ -75,6 +75,12 @@ export default function SignInPage() {
     setSignInData({ email: "" });
   };
 
+  const handleWhatsAppJoin = () => {
+    // Replace with your actual WhatsApp group link
+    const whatsappGroupLink = "https://chat.whatsapp.com/KQLaXNhJKEu2w0KqtEP5Cs";
+    window.open(whatsappGroupLink, "_blank");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -104,7 +110,7 @@ export default function SignInPage() {
           <CardContent>
             {emailSent ? (
               // Email Sent State
-              <div className="text-center space-y-4">
+              <div className="text-center space-y-6">
                 <div className="flex justify-center">
                   <div className="bg-green-100 p-4 rounded-full">
                     <Send className="h-8 w-8 text-green-600" />
@@ -121,6 +127,27 @@ export default function SignInPage() {
                     Click the link in your email to sign in securely.
                   </p>
                 </div>
+
+                {/* WhatsApp Group Invitation */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-center">
+                    <MessageCircle className="h-6 w-6 text-green-600 mr-2" />
+                    <h3 className="font-semibold text-green-800">Join Our Community</h3>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    While you wait, join our WhatsApp group to connect with fellow medical students and get study tips!
+                  </p>
+                  <Button
+                    onClick={handleWhatsAppJoin}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    size="sm"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Join WhatsApp Group
+                    <ExternalLink className="h-3 w-3 ml-2" />
+                  </Button>
+                </div>
+
                 <div className="pt-4 space-y-2">
                   <p className="text-xs text-gray-500">
                     Didn't receive the email? Check your spam folder or
