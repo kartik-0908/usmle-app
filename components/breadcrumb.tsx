@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,6 +15,28 @@ import Link from "next/link";
 
 export function MyBreadcrumb() {
   const pathname = usePathname();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if screen is mobile size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // 768px is the md breakpoint
+    };
+
+    // Check on mount
+    checkMobile();
+
+    // Add event listener for window resize
+    window.addEventListener('resize', checkMobile);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Return null on mobile
+  if (isMobile) {
+    return null;
+  }
 
   // Split the pathname and filter out empty strings
   const pathSegments = pathname.split("/").filter(Boolean);

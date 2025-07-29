@@ -228,29 +228,6 @@ export function QuestionPracticeScreen({
     setIsSubmitting(false);
   };
 
-  const navigateToQuestion = (questionIndex: number) => {
-    if (questionIndex < 0 || questionIndex >= allQuestions.length) return;
-
-    const targetQuestion = allQuestions[questionIndex];
-    if (topicSlug && subtopicSlug) {
-      router.prefetch(
-        `/dashboard/practice/${stepSlug}/${topicSlug}/${subtopicSlug}/question/${targetQuestion.id}`
-      );
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
-      navigateToQuestion(currentQuestionIndex - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentQuestionIndex < totalQuestions - 1) {
-      navigateToQuestion(currentQuestionIndex + 1);
-    }
-  };
-
   const renderQuestionInput = () => {
     const optionLabels = [
       "A",
@@ -292,11 +269,96 @@ export function QuestionPracticeScreen({
     );
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+  const renderQuestionCard = () => (
+    <Card>
+      <CardContent className="space-y-6">
+        {/* Question Image */}
+        {question.image && (
+          <div className="flex justify-center">
+            <img
+              src={question.image}
+              alt="Question illustration"
+              className="max-w-full h-auto rounded-lg border"
+            />
+          </div>
+        )}
+
+        {/* Question Text */}
+        <div className="prose prose-sm max-w-none">
+          <p className="text-sm leading-relaxed">{question.question}</p>
+        </div>
+
+        {/* Answer Input */}
+        <div className="space-y-4">
+          <Label className="text-base font-semibold">
+            Your Answer:
+          </Label>
+          {renderQuestionInput()}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-4">
+          {!showAnswer ? (
+            <Button
+              onClick={handleSubmit}
+              disabled={!selectedAnswer || isSubmitting}
+              className="px-8"
+            >
+              {isSubmitting ? "Submitting..." : "Submit Answer"}
+            </Button>
+          ) : (
+            <Button
+              onClick={handleReset}
+              variant="outline"
+              className="px-8"
+            >
+              <IconRefresh className="size-4 mr-2" />
+              Try Again
+            </Button>
+          )}
+        </div>
+
+        {/* Answer Feedback */}
+        {showAnswer && (
+          <div className="space-y-4">
+            <Separator />
+            <div
+              className={`p-4 rounded-lg ${
+                isCorrect
+                  ? "bg-green-50 border-green-200 dark:bg-green-950"
+                  : "bg-red-50 border-red-200 dark:bg-red-950"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                {isCorrect ? (
+                  <IconCheck className="size-5 text-green-600" />
+                ) : (
+                  <IconX className="size-5 text-red-600" />
+                )}
+                <span
+                  className={`font-semibold ${
+                    isCorrect
+                      ? "text-green-800 dark:text-green-200"
+                      : "text-red-800 dark:text-red-200"
+                  }`}
+                >
+                  {isCorrect ? "Correct!" : "Incorrect"}
+                </span>
+              </div>
+              {!isCorrect && (
+                <p className="text-sm text-muted-foreground mb-2">
+                  Correct answer:{" "}
+                  <span className="font-semibold">
+                    {question.correctAnswer}
+                  </span>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -383,8 +445,8 @@ export function QuestionPracticeScreen({
 
           {/* Right - Timer and Layout Controls */}
           <div className="flex items-center gap-4">
-            {/* Layout preset buttons */}
-            <div className="flex items-center gap-1 ml-4">
+            {/* Layout preset buttons - Hidden on mobile */}
+            <div className="hidden md:flex items-center gap-1 ml-4">
               <Button
                 variant="ghost"
                 size="sm"
@@ -406,102 +468,34 @@ export function QuestionPracticeScreen({
         </div>
       </div>
 
-      {/* Main Content with Resizable Layout */}
+      {/* Main Content with Responsive Layout */}
       <div className="container mx-auto px-4 pb-8">
-        <div ref={containerRef} className="flex gap-1 min-h-[600px]">
+        {/* Mobile Layout - Stack vertically */}
+        <div className="md:hidden space-y-6">
+          {/* Question Section */}
+          <div>
+            {renderQuestionCard()}
+          </div>
+
+          {/* AI Study Assistant Chat */}
+          <div>
+            <StudyAssistantChat
+              question={question}
+              userAnswer={selectedAnswer}
+              showAnswer={showAnswer}
+              isCorrect={isCorrect}
+            />
+          </div>
+        </div>
+
+        {/* Tablet and Desktop Layout - Side by side with resizable divider */}
+        <div ref={containerRef} className="hidden md:flex gap-1 min-h-[600px]">
           {/* Question Section */}
           <div
             style={{ width: `${questionWidth}%` }}
             className={`min-w-0 ${isMounted && !isResizing ? "transition-all duration-200" : ""}`}
           >
-            <Card>
-              <CardContent className="space-y-6">
-                {/* Question Image */}
-                {question.image && (
-                  <div className="flex justify-center">
-                    <img
-                      src={question.image}
-                      alt="Question illustration"
-                      className="max-w-full h-auto rounded-lg border"
-                    />
-                  </div>
-                )}
-
-                {/* Question Text */}
-                <div className="prose prose-sm max-w-none">
-                  <p className="text-sm leading-relaxed">{question.question}</p>
-                </div>
-
-                {/* Answer Input */}
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold">
-                    Your Answer:
-                  </Label>
-                  {renderQuestionInput()}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-4">
-                  {!showAnswer ? (
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={!selectedAnswer || isSubmitting}
-                      className="px-8"
-                    >
-                      {isSubmitting ? "Submitting..." : "Submit Answer"}
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleReset}
-                      variant="outline"
-                      className="px-8"
-                    >
-                      <IconRefresh className="size-4 mr-2" />
-                      Try Again
-                    </Button>
-                  )}
-                </div>
-
-                {/* Answer Feedback */}
-                {showAnswer && (
-                  <div className="space-y-4">
-                    <Separator />
-                    <div
-                      className={`p-4 rounded-lg ${
-                        isCorrect
-                          ? "bg-green-50 border-green-200 dark:bg-green-950"
-                          : "bg-red-50 border-red-200 dark:bg-red-950"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        {isCorrect ? (
-                          <IconCheck className="size-5 text-green-600" />
-                        ) : (
-                          <IconX className="size-5 text-red-600" />
-                        )}
-                        <span
-                          className={`font-semibold ${
-                            isCorrect
-                              ? "text-green-800 dark:text-green-200"
-                              : "text-red-800 dark:text-red-200"
-                          }`}
-                        >
-                          {isCorrect ? "Correct!" : "Incorrect"}
-                        </span>
-                      </div>
-                      {!isCorrect && (
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Correct answer:{" "}
-                          <span className="font-semibold">
-                            {question.correctAnswer}
-                          </span>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {renderQuestionCard()}
           </div>
 
           {/* Resizable Divider */}
