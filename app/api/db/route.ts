@@ -3,8 +3,8 @@ import prisma from "@/lib/db";
 export async function GET(request: Request) {
   try {
     console.log("categorizing questions ...");
-    // await saveExaplanation();
-    categorizeQuestions()
+    await saveExaplanation();
+    // categorizeQuestions()
     // importQuestions();
     // await prisma.question.deleteMany()
     // await prisma.question.updateMany({
@@ -723,13 +723,24 @@ function getDifficulty(metaInfo: string) {
   return "MEDIUM";
 }
 
-// Function to create question with options
 async function createQuestionWithOptions(questionData: any) {
   const { question, answer, options, meta_info } = questionData;
   
-
   return await prisma.$transaction(async (tx: any) => {
-    // Create the question
+    // Check if question already exists
+    const existingQuestion = await tx.question.findFirst({
+      where: {
+        questionText: question
+      }
+    });
+
+    // If question already exists, skip creation and return the existing question
+    if (existingQuestion) {
+      console.log(`Question already exists with ID: ${existingQuestion.id}, skipping...`);
+      return existingQuestion;
+    }
+
+    // Create the question if it doesn't exist
     const createdQuestion = await tx.question.create({
       data: {
         title:
@@ -744,7 +755,6 @@ async function createQuestionWithOptions(questionData: any) {
 
     // Create options
     const optionPromises = Object.entries(options).map(([key, text], index) =>
-      
       tx.option.create({
         data: {
           text: text,
@@ -760,7 +770,6 @@ async function createQuestionWithOptions(questionData: any) {
     return createdQuestion;
   });
 }
-
 async function importQuestions() {
   try {
     // Get the file path from command line arguments
