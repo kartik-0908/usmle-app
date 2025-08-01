@@ -2,26 +2,26 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type UniqueIdentifier,
-} from "@dnd-kit/core";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { redirect, useParams } from "next/navigation";
+// import {
+//   closestCenter,
+//   DndContext,
+//   KeyboardSensor,
+//   MouseSensor,
+//   TouchSensor,
+//   useSensor,
+//   useSensors,
+//   type DragEndEvent,
+//   type UniqueIdentifier,
+// } from "@dnd-kit/core";
+// import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+// import {
+//   arrayMove,
+//   SortableContext,
+//   useSortable,
+//   verticalListSortingStrategy,
+// } from "@dnd-kit/sortable";
+// import { CSS } from "@dnd-kit/utilities";
 import {
   IconChevronDown,
   IconChevronLeft,
@@ -69,6 +69,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useRouter } from "next/router";
 
 export const subTopicSchema = z.object({
   id: z.number(),
@@ -82,55 +83,71 @@ export const subTopicSchema = z.object({
   slug: z.string(),
 });
 // Create a separate component for the drag handle
-function DragHandle({ id }: { id: number }) {
-  const { attributes, listeners } = useSortable({
-    id,
-  });
+// function DragHandle({ id }: { id: number }) {
+//   const { attributes, listeners } = useSortable({
+//     id,
+//   });
 
-  return (
-    <Button
-      {...attributes}
-      {...listeners}
-      variant="ghost"
-      size="icon"
-      className="text-muted-foreground size-7 hover:bg-transparent"
-    >
-      <IconGripVertical className="text-muted-foreground size-3" />
-      <span className="sr-only">Drag to reorder</span>
-    </Button>
-  );
-}
+//   return (
+//     <Button
+//       {...attributes}
+//       {...listeners}
+//       variant="ghost"
+//       size="icon"
+//       className="text-muted-foreground size-7 hover:bg-transparent"
+//     >
+//       <IconGripVertical className="text-muted-foreground size-3" />
+//       <span className="sr-only">Drag to reorder</span>
+//     </Button>
+//   );
+// }
 
 const columns: ColumnDef<z.infer<typeof subTopicSchema>>[] = [
-  {
-    id: "drag",
-    header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
-  },
+  // {
+  //   id: "drag",
+  //   header: () => null,
+  //   cell: ({ row }) => <DragHandle id={row.original.id} />,
+  // },
 
   {
     accessorKey: "name",
     header: "Sub-Topic",
-    cell: ({ row }) => <div className="font-medium">{row.original.name}</div>,
+    cell: ({ row }) => {
+      const params = useParams();
+      const step = params.step as string;
+      const topicSlug = params.topic as string;
+      const subtopicSlug = row.original.slug;
+      return (
+        <Link
+          prefetch={true}
+          className="cursor-pointer"
+          href={`/dashboard/practice/${step}/${topicSlug}/${subtopicSlug}`}
+        >
+          <div className="font-medium">{row.original.name}</div>
+        </Link>
+      );
+    },
     enableHiding: false,
   },
-   {
+  {
     id: "actions",
     header: "Actions",
     cell: ({ row }) => {
       const params = useParams();
       const step = params.step as string;
       const topicSlug = params.topic as string;
-      const subtopicSlug = (row.original.slug);
+      const subtopicSlug = row.original.slug;
 
       return (
         <div className="flex items-center gap-2">
-          <Link prefetch={true} href={`/dashboard/practice/${step}/${topicSlug}/${subtopicSlug}`}>
+          <Link
+            prefetch={true}
+            href={`/dashboard/practice/${step}/${topicSlug}/${subtopicSlug}`}
+          >
             <Button size="sm" variant="default">
               Practice
             </Button>
           </Link>
-        
         </div>
       );
     },
@@ -184,24 +201,13 @@ const columns: ColumnDef<z.infer<typeof subTopicSchema>>[] = [
       <div className="text-muted-foreground">{row.original.lastPracticed}</div>
     ),
   },
- 
 ];
 
 function DraggableRow({ row }: { row: Row<z.infer<typeof subTopicSchema>> }) {
-  const { transform, transition, setNodeRef, isDragging } = useSortable({
-    id: row.original.id,
-  });
 
   return (
     <TableRow
-      data-state={row.getIsSelected() && "selected"}
-      data-dragging={isDragging}
-      ref={setNodeRef}
       className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition: transition,
-      }}
     >
       {row.getVisibleCells().map((cell) => (
         <TableCell key={cell.id}>
@@ -209,6 +215,7 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof subTopicSchema>> }) {
         </TableCell>
       ))}
     </TableRow>
+    //  </Link>
   );
 }
 
@@ -232,17 +239,17 @@ export function PracticeSubTopicsTable({
     pageSize: 10,
   });
   const [globalFilter, setGlobalFilter] = React.useState("");
-  const sortableId = React.useId();
-  const sensors = useSensors(
-    useSensor(MouseSensor, {}),
-    useSensor(TouchSensor, {}),
-    useSensor(KeyboardSensor, {})
-  );
+  // const sortableId = React.useId();
+  // const sensors = useSensors(
+  //   useSensor(MouseSensor, {}),
+  //   useSensor(TouchSensor, {}),
+  //   useSensor(KeyboardSensor, {})
+  // );
 
-  const dataIds = React.useMemo<UniqueIdentifier[]>(
-    () => data?.map(({ id }) => id) || [],
-    [data]
-  );
+  // const dataIds = React.useMemo<UniqueIdentifier[]>(
+  //   () => data?.map(({ id }) => id) || [],
+  //   [data]
+  // );
 
   const table = useReactTable({
     data,
@@ -272,16 +279,16 @@ export function PracticeSubTopicsTable({
     globalFilterFn: "includesString",
   });
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (active && over && active.id !== over.id) {
-      setData((data) => {
-        const oldIndex = dataIds.indexOf(active.id);
-        const newIndex = dataIds.indexOf(over.id);
-        return arrayMove(data, oldIndex, newIndex);
-      });
-    }
-  }
+  // function handleDragEnd(event: DragEndEvent) {
+  //   const { active, over } = event;
+  //   if (active && over && active.id !== over.id) {
+  //     setData((data) => {
+  //       const oldIndex = dataIds.indexOf(active.id);
+  //       const newIndex = dataIds.indexOf(over.id);
+  //       return arrayMove(data, oldIndex, newIndex);
+  //     });
+  //   }
+  // }
 
   return (
     <div className="w-full space-y-4">
@@ -336,55 +343,57 @@ export function PracticeSubTopicsTable({
 
       <div className="px-4 lg:px-6">
         <div className="overflow-hidden rounded-lg border">
-          <DndContext
+          {/* <DndContext
             collisionDetection={closestCenter}
             modifiers={[restrictToVerticalAxis]}
             onDragEnd={handleDragEnd}
             sensors={sensors}
             id={sortableId}
-          >
-            <Table>
-              <TableHeader className="bg-muted sticky top-0 z-10">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => {
-                      return (
-                        <TableHead key={header.id} colSpan={header.colSpan}>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </TableHead>
-                      );
-                    })}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows?.length ? (
-                  <SortableContext
-                    items={dataIds}
-                    strategy={verticalListSortingStrategy}
+          > */}
+          <Table>
+            <TableHeader className="bg-muted sticky top-0 z-10">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id} colSpan={header.colSpan}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                // <SortableContext
+                //   items={dataIds}
+                //   strategy={verticalListSortingStrategy}
+                // >
+                <>
+                  {table.getRowModel().rows.map((row) => (
+                    <DraggableRow key={row.id} row={row} />
+                  ))}
+                </>
+              ) : (
+                // </SortableContext>
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
                   >
-                    {table.getRowModel().rows.map((row) => (
-                      <DraggableRow key={row.id} row={row} />
-                    ))}
-                  </SortableContext>
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
-                      No sub-topics found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </DndContext>
+                    No sub-topics found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+          {/* </DndContext> */}
         </div>
 
         <div className="flex items-center justify-between px-4 py-4">

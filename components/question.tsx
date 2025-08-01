@@ -285,7 +285,7 @@ export function QuestionPracticeScreen({
 
         {/* Question Text */}
         <div className="prose prose-sm max-w-none">
-          <p className="text-sm leading-relaxed">{question.question}</p>
+          <p className="text-justify text-sm leading-relaxed">{question.question}</p>
         </div>
 
         {/* Answer Input */}

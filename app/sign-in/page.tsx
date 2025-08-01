@@ -266,8 +266,8 @@ export default function SignInPage() {
 
         {/* Footer */}
         <div className="text-center mt-8">
-          <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-full px-6 py-3 shadow-sm inline-block">
-            <p className="text-gray-700 font-medium">
+          <div>
+            <p className="text-gray-400 font-medium">
               © 2025 StepGenie. All rights reserved.
             </p>
           </div>

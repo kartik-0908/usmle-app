@@ -3,25 +3,25 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type UniqueIdentifier,
-} from "@dnd-kit/core";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+// import {
+//   closestCenter,
+//   DndContext,
+//   KeyboardSensor,
+//   MouseSensor,
+//   TouchSensor,
+//   useSensor,
+//   useSensors,
+//   type DragEndEvent,
+//   type UniqueIdentifier,
+// } from "@dnd-kit/core";
+// import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+// import {
+//   arrayMove,
+//   SortableContext,
+//   useSortable,
+//   verticalListSortingStrategy,
+// } from "@dnd-kit/sortable";
+// import { CSS } from "@dnd-kit/utilities";
 import {
   IconChevronDown,
   IconChevronLeft,
@@ -84,43 +84,55 @@ export const questionSchema = z.object({
 });
 
 // Create a separate component for the drag handle
-function DragHandle({ id }: { id: string }) {
-  const { attributes, listeners } = useSortable({
-    id,
-  });
+// function DragHandle({ id }: { id: string }) {
+//   const { attributes, listeners } = useSortable({
+//     id,
+//   });
 
-  return (
-    <Button
-      {...attributes}
-      {...listeners}
-      variant="ghost"
-      size="icon"
-      className="text-muted-foreground size-7 hover:bg-transparent"
-    >
-      <IconGripVertical className="text-muted-foreground size-3" />
-      <span className="sr-only">Drag to reorder</span>
-    </Button>
-  );
-}
+//   return (
+//     <Button
+//       {...attributes}
+//       {...listeners}
+//       variant="ghost"
+//       size="icon"
+//       className="text-muted-foreground size-7 hover:bg-transparent"
+//     >
+//       <IconGripVertical className="text-muted-foreground size-3" />
+//       <span className="sr-only">Drag to reorder</span>
+//     </Button>
+//   );
+// }
 
 const columns: ColumnDef<z.infer<typeof questionSchema>>[] = [
-  {
-    id: "drag",
-    header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
-  },
+  // {
+  //   id: "drag",
+  //   header: () => null,
+  //   cell: ({ row }) => <DragHandle id={row.original.id} />,
+  // },
 
   {
     accessorKey: "title",
     header: "Question",
-    cell: ({ row }) => (
-      <div className="max-w-md">
-        <div className="font-medium truncate">{row.original.title}</div>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const params = useParams();
+      const step = params.step as string;
+      const topicSlug = params.topic as string;
+      const subtopicSlug = params.subtopic as string;
+      const questionId = row.original.id;
+      return (
+        <Link
+          prefetch={true}
+          href={`/dashboard/practice/${step}/${topicSlug}/${subtopicSlug}/question/${questionId}`}
+        >
+          <div className="max-w-md">
+            <div className="font-medium truncate">{row.original.title}</div>
+          </div>
+        </Link>
+      );
+    },
     enableHiding: false,
   },
-   {
+  {
     id: "actions",
     header: "Actions",
     cell: ({ row }) => {
@@ -132,7 +144,8 @@ const columns: ColumnDef<z.infer<typeof questionSchema>>[] = [
 
       return (
         <div className="flex items-center gap-2">
-          <Link prefetch={true}
+          <Link
+            prefetch={true}
             href={`/dashboard/practice/${step}/${topicSlug}/${subtopicSlug}/question/${questionId}`}
           >
             <Button size="sm" variant="default">
@@ -201,24 +214,23 @@ const columns: ColumnDef<z.infer<typeof questionSchema>>[] = [
       </div>
     ),
   },
- 
 ];
 
 function DraggableRow({ row }: { row: Row<z.infer<typeof questionSchema>> }) {
-  const { transform, transition, setNodeRef, isDragging } = useSortable({
-    id: row.original.id,
-  });
+  // const { transform, transition, setNodeRef, isDragging } = useSortable({
+  //   id: row.original.id,
+  // });
 
   return (
     <TableRow
-      data-state={row.getIsSelected() && "selected"}
-      data-dragging={isDragging}
-      ref={setNodeRef}
+      // data-state={row.getIsSelected() && "selected"}
+      // data-dragging={isDragging}
+      // ref={setNodeRef}
       className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition: transition,
-      }}
+      // style={{
+      //   transform: CSS.Transform.toString(transform),
+      //   transition: transition,
+      // }}
     >
       {row.getVisibleCells().map((cell) => (
         <TableCell key={cell.id}>
@@ -251,16 +263,16 @@ export function PracticeQuestionsTable({
   });
   const [globalFilter, setGlobalFilter] = React.useState("");
   const sortableId = React.useId();
-  const sensors = useSensors(
-    useSensor(MouseSensor, {}),
-    useSensor(TouchSensor, {}),
-    useSensor(KeyboardSensor, {})
-  );
+  // const sensors = useSensors(
+  //   useSensor(MouseSensor, {}),
+  //   useSensor(TouchSensor, {}),
+  //   useSensor(KeyboardSensor, {})
+  // );
 
-  const dataIds = React.useMemo<UniqueIdentifier[]>(
-    () => data?.map(({ id }) => id) || [],
-    [data]
-  );
+  // const dataIds = React.useMemo<UniqueIdentifier[]>(
+  //   () => data?.map(({ id }) => id) || [],
+  //   [data]
+  // );
 
   const table = useReactTable({
     data,
@@ -290,16 +302,16 @@ export function PracticeQuestionsTable({
     globalFilterFn: "includesString",
   });
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (active && over && active.id !== over.id) {
-      setData((data) => {
-        const oldIndex = dataIds.indexOf(active.id);
-        const newIndex = dataIds.indexOf(over.id);
-        return arrayMove(data, oldIndex, newIndex);
-      });
-    }
-  }
+  // function handleDragEnd(event: DragEndEvent) {
+  //   const { active, over } = event;
+  //   if (active && over && active.id !== over.id) {
+  //     setData((data) => {
+  //       const oldIndex = dataIds.indexOf(active.id);
+  //       const newIndex = dataIds.indexOf(over.id);
+  //       return arrayMove(data, oldIndex, newIndex);
+  //     });
+  //   }
+  // }
 
   // Statistics
   const totalQuestions = data.length;
@@ -363,13 +375,13 @@ export function PracticeQuestionsTable({
 
       <div className="px-4 lg:px-6">
         <div className="overflow-hidden rounded-lg border">
-          <DndContext
+          {/* <DndContext
             collisionDetection={closestCenter}
             modifiers={[restrictToVerticalAxis]}
             onDragEnd={handleDragEnd}
             sensors={sensors}
             id={sortableId}
-          >
+          > */}
             <Table>
               <TableHeader className="bg-muted sticky top-0 z-10">
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -391,14 +403,11 @@ export function PracticeQuestionsTable({
               </TableHeader>
               <TableBody>
                 {table.getRowModel().rows?.length ? (
-                  <SortableContext
-                    items={dataIds}
-                    strategy={verticalListSortingStrategy}
-                  >
+                <>
                     {table.getRowModel().rows.map((row) => (
                       <DraggableRow key={row.id} row={row} />
                     ))}
-                  </SortableContext>
+                  </>
                 ) : (
                   <TableRow>
                     <TableCell
@@ -411,7 +420,7 @@ export function PracticeQuestionsTable({
                 )}
               </TableBody>
             </Table>
-          </DndContext>
+          {/* </DndContext> */}
         </div>
 
         <div className="flex items-center justify-between px-4 py-4">
