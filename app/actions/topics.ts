@@ -5,7 +5,6 @@ import { headers } from "next/headers";
 import { auth } from "../lib/auth";
 
 export async function getSteps(userId: string): Promise<StepWithProgress[]> {
-  
   try {
     // Fetch all active topics with their progress
     const steps = await prisma.step.findMany({
@@ -268,7 +267,7 @@ function getDominantDifficulty(
 export async function getSubtopicData(topicSlug: string, userId: string) {
   // Get all subtopics for the topic
   const now = Date.now();
- 
+
   const subtopics = await prisma.subtopic.findMany({
     where: {
       topic: {
@@ -280,11 +279,17 @@ export async function getSubtopicData(topicSlug: string, userId: string) {
       name: true,
       slug: true,
       questionSubtopics: {
+        where: {
+          question: {
+            isActive: true,
+          },
+        },
         select: {
           question: {
             select: {
               id: true,
               difficulty: true,
+
               attempts: {
                 where: {
                   userId: userId,
@@ -303,7 +308,7 @@ export async function getSubtopicData(topicSlug: string, userId: string) {
     },
   });
 
-  console.log('db query finished at', Date.now()-now)
+  console.log("db query finished at", Date.now() - now);
 
   // Transform the data for each subtopic
   const transformedData = subtopics.map((subtopic, index) => {
