@@ -19,16 +19,18 @@ model User {
   updatedAt DateTime @updatedAt
 
   // User's attempts and progress
-  attempts          UserAttempt[]
-  problemSets       UserProblemSet[]
-  name              String
-  emailVerified     Boolean
-  image             String?
-  sessions          Session[]
-  accounts          Account[]
-  UserTopicProgress UserTopicProgress[]
-  UserStepProgress  UserStepProgress[]
-  ChatMessage       ChatMessage[]
+  attempts              UserAttempt[]
+  problemSets           UserProblemSet[]
+  name                  String
+  emailVerified         Boolean
+  image                 String?
+  sessions              Session[]
+  accounts              Account[]
+  UserTopicProgress     UserTopicProgress[]
+  UserStepProgress      UserStepProgress[]
+  ChatMessage           ChatMessage[]
+  CustomPracticeSet     CustomPracticeSet[]
+  UserCustomPracticeSet UserCustomPracticeSet[]
 
   @@map("users")
 }
@@ -68,9 +70,10 @@ model Topic {
   step   Step   @relation(fields: [stepId], references: [id], onDelete: Cascade)
 
   // Relationships
-  subtopics         Subtopic[]
-  questionTopics    QuestionTopic[]
-  UserTopicProgress UserTopicProgress[]
+  subtopics              Subtopic[]
+  questionTopics         QuestionTopic[]
+  UserTopicProgress      UserTopicProgress[]
+  CustomPracticeSetTopic CustomPracticeSetTopic[]
 
   @@unique([stepId, name])
   // Optimized indexes
@@ -140,12 +143,13 @@ model Question {
   updatedAt    DateTime     @updatedAt
 
   // Relationships
-  options             Option[]
-  questionTopics      QuestionTopic[]
-  questionSubtopics   QuestionSubtopic[]
-  attempts            UserAttempt[]
-  problemSetQuestions ProblemSetQuestion[]
-  ChatMessage         ChatMessage[]
+  options                    Option[]
+  questionTopics             QuestionTopic[]
+  questionSubtopics          QuestionSubtopic[]
+  attempts                   UserAttempt[]
+  problemSetQuestions        ProblemSetQuestion[]
+  ChatMessage                ChatMessage[]
+  UserCustomPracticeQuestion UserCustomPracticeQuestion[]
 
   // Optimized indexes
   @@index([isActive, createdAt]) // Critical: for your navigation queries
@@ -333,6 +337,99 @@ model UserStepProgress {
   @@index([stepId, isCompleted]) // For step completion analytics
   @@index([userId, lastPracticedAt]) // For recent practice queries
   @@map("user_step_progress")
+}
+
+model CustomPracticeSet {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  totalQuestions Int // User-specified number of questions
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Foreign key
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  topics           CustomPracticeSetTopic[]
+  userPracticeSets UserCustomPracticeSet[]
+
+  // Optimized indexes
+  @@index([userId, isActive, createdAt]) // For user's practice sets
+  @@index([isActive, createdAt]) // For active practice sets
+  @@map("custom_practice_sets")
+}
+
+// Junction table for CustomPracticeSet-Topic many-to-many relationship
+model CustomPracticeSetTopic {
+  customPracticeSetId String
+  topicId             String
+  createdAt           DateTime @default(now())
+
+  customPracticeSet CustomPracticeSet @relation(fields: [customPracticeSetId], references: [id], onDelete: Cascade)
+  topic             Topic             @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([customPracticeSetId, topicId])
+  // Optimized indexes
+  @@index([topicId]) // For topic -> practice sets lookups
+  @@index([customPracticeSetId]) // For practice set -> topics lookups
+  @@map("custom_practice_set_topics")
+}
+
+model UserCustomPracticeSet {
+  id                 String            @id @default(cuid())
+  status             PracticeSetStatus @default(NOT_STARTED)
+  score              Int? // Score out of total questions attempted
+  questionsAttempted Int               @default(0)
+  questionsCorrect   Int               @default(0)
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  // Foreign keys
+  userId              String
+  customPracticeSetId String
+
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customPracticeSet CustomPracticeSet @relation(fields: [customPracticeSetId], references: [id], onDelete: Cascade)
+
+  // Store the generated questions for this session
+  generatedQuestions UserCustomPracticeQuestion[]
+
+  @@unique([userId, customPracticeSetId])
+  // Optimized indexes
+  @@index([userId, status]) // For user progress queries
+  @@index([customPracticeSetId, status]) // For practice set analytics
+  @@map("user_custom_practice_sets")
+}
+
+// Store the specific questions generated for each user's practice session
+model UserCustomPracticeQuestion {
+  id                      String   @id @default(cuid())
+  userCustomPracticeSetId String
+  questionId              String
+  order                   Int      @default(0)
+  createdAt               DateTime @default(now())
+
+  userCustomPracticeSet UserCustomPracticeSet @relation(fields: [userCustomPracticeSetId], references: [id], onDelete: Cascade)
+  question              Question              @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userCustomPracticeSetId, questionId])
+  // Optimized indexes
+  @@index([userCustomPracticeSetId, order]) // For ordered questions
+  @@index([questionId]) // For question lookups
+  @@map("user_custom_practice_questions")
+}
+
+// Add this new enum
+enum PracticeSetStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  PAUSED
 }
 
 // Enums (unchanged)

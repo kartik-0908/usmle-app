@@ -75,23 +75,6 @@ export async function getTopicsWithProgress(
           },
         },
       },
-      // include: {
-      //   UserTopicProgress: {
-      //     where: {
-      //       userId: userId,
-      //     },
-      //   },
-      //   questionTopics: {
-      //     where: {
-      //       question: {
-      //         isActive: true,
-      //       },
-      //     },
-      //     include: {
-      //       question: true,
-      //     },
-      //   },
-      // },
       orderBy: {
         order: "asc",
       },

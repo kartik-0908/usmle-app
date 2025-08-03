@@ -22,14 +22,26 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import Image from "next/image";
 
 const data = {
   navMain: [
     {
       title: "Practice",
-      url: "/dashboard/practice",
+      url: "#",
       icon: IconPencil,
       isComingSoon: false,
+      isActive: true,
+      items: [
+        {
+          title: "Topic-wise",
+          url: "/dashboard/practice",
+        },
+        {
+          title: "Build Your Own Set",
+          url: "/dashboard/practice-custom",
+        },
+      ],
     },
     {
       title: "Analytics",
@@ -38,11 +50,11 @@ const data = {
       isComingSoon: true,
     },
     {
-      title:'Mock Interview',
-      url: '#',
-      icon:IconBrandLine,
-      isComingSoon: true
-    }
+      title: "Mock Interview",
+      url: "#",
+      icon: IconBrandLine,
+      isComingSoon: true,
+    },
   ],
 
   navSecondary: [
@@ -66,13 +78,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              // asChild
+              className="h-8 w-32 hover:bg-transparent"
             >
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Step Genie</span>
-              </a>
+              {/* <a href="#"> */}
+                <Image src={'/logo-new.png'} alt="logo" width={512} height={32}></Image>
+                {/* <IconInnerShadowTop className="!size-5" />
+                <span className="text-base font-semibold">Step Genie</span> */}
+              {/* </a> */}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

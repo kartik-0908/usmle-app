@@ -137,14 +137,6 @@ export function StudyAssistantChat({
   className,
 }: StudyAssistantChatProps) {
   // Initialize voice mode from cookie, default to true
-  const {
-    data: session,
-    isPending, //loading state
-    refetch, //refetch the session
-  } = authClient.useSession();
-  if (isPending) {
-    return null;
-  }
 
   const [isVoiceMode, setIsVoiceMode] = React.useState(false);
   const [isInitialized, setIsInitialized] = React.useState(false);
@@ -156,23 +148,6 @@ export function StudyAssistantChat({
     [key: string]: HTMLDivElement | null;
   }>({});
   const lastAiMessageIdRef = React.useRef<string | null>(null);
-
-  // Load voice mode preference from cookie on component mount
-  React.useEffect(() => {
-    const savedVoiceMode = getCookie(VOICE_MODE_COOKIE);
-    if (savedVoiceMode !== null) {
-      setIsVoiceMode(savedVoiceMode === "true");
-    }
-    setIsInitialized(true);
-  }, []);
-
-  // Save voice mode preference to cookie whenever it changes
-  React.useEffect(() => {
-    if (isInitialized) {
-      setCookie(VOICE_MODE_COOKIE, isVoiceMode.toString());
-    }
-  }, [isVoiceMode, isInitialized]);
-
   const {
     messages,
     input,
@@ -198,6 +173,27 @@ export function StudyAssistantChat({
       },
     },
   });
+  const {
+    data: session,
+    isPending, //loading state
+  } = authClient.useSession();
+ 
+
+  // Load voice mode preference from cookie on component mount
+  React.useEffect(() => {
+    const savedVoiceMode = getCookie(VOICE_MODE_COOKIE);
+    if (savedVoiceMode !== null) {
+      setIsVoiceMode(savedVoiceMode === "true");
+    }
+    setIsInitialized(true);
+  }, []);
+
+  // Save voice mode preference to cookie whenever it changes
+  React.useEffect(() => {
+    if (isInitialized) {
+      setCookie(VOICE_MODE_COOKIE, isVoiceMode.toString());
+    }
+  }, [isVoiceMode, isInitialized]);
 
   // ADD THIS EFFECT - Load chat history when component mounts or question changes
   React.useEffect(() => {
@@ -311,6 +307,10 @@ export function StudyAssistantChat({
       content: reply,
     });
   };
+
+   if (isPending) {
+    return null;
+  }
 
   // CHANGE THIS CONDITION - Don't render until we've loaded both cookie preference and chat history
   if (!isInitialized || isLoadingHistory) {
