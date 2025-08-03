@@ -117,6 +117,8 @@ export async function createCustomPracticeSet(input: CreateCustomPracticeSetInpu
         },
       },
     });
+  },{
+    timeout: 30000, // 10 seconds timeout for the transaction
   });
 
   if (!practiceSet) {
