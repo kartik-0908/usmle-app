@@ -11,12 +11,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  firstName String?
-  lastName  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  email         String   @unique
+  firstName     String?
+  lastName      String?
+  age           Int?
+  gender        String? // 'male', 'female', 'other'  
+  medicalSchool String?
+  yearOfPassing Int?
+  stepExam      String? // 'step1', 'step2'
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // User's attempts and progress
   attempts              UserAttempt[]
@@ -31,6 +36,7 @@ model User {
   ChatMessage           ChatMessage[]
   CustomPracticeSet     CustomPracticeSet[]
   UserCustomPracticeSet UserCustomPracticeSet[]
+  UserBranchProgress    UserBranchProgress[]
 
   @@map("users")
 }
@@ -98,6 +104,7 @@ model Subtopic {
   topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
   // Relationships
+  branches          Branch[]
   questionSubtopics QuestionSubtopic[]
 
   @@unique([topicId, name])
@@ -106,6 +113,31 @@ model Subtopic {
   @@index([topicId, isActive, order]) // For topic subtopics ordering
   @@index([isActive, createdAt]) // For active subtopics by date
   @@map("subtopics")
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign key
+  subtopicId String
+  subtopic   Subtopic @relation(fields: [subtopicId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  questionBranches   QuestionBranch[]
+  UserBranchProgress UserBranchProgress[]
+
+  @@unique([subtopicId, name])
+  // Optimized indexes
+  @@index([slug, isActive]) // Critical: for your slug+active lookups
+  @@index([subtopicId, isActive, order]) // For subtopic branches ordering
+  @@index([isActive, createdAt]) // For active branches by date
+  @@map("branches")
 }
 
 model ChatMessage {
@@ -146,6 +178,7 @@ model Question {
   options                    Option[]
   questionTopics             QuestionTopic[]
   questionSubtopics          QuestionSubtopic[]
+  questionBranches           QuestionBranch[]
   attempts                   UserAttempt[]
   problemSetQuestions        ProblemSetQuestion[]
   ChatMessage                ChatMessage[]
@@ -207,6 +240,23 @@ model QuestionSubtopic {
   @@index([questionId]) // For question -> subtopics lookups
   @@index([subtopicId, createdAt]) // For ordered subtopic questions
   @@map("question_subtopics")
+}
+
+// Junction table for Question-Branch many-to-many relationship
+model QuestionBranch {
+  questionId String
+  branchId   String
+  createdAt  DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, branchId])
+  // Critical indexes for junction table performance
+  @@index([branchId]) // For branch -> questions lookups
+  @@index([questionId]) // For question -> branches lookups
+  @@index([branchId, createdAt]) // For ordered branch questions
+  @@map("question_branches")
 }
 
 model ProblemSet {
@@ -337,6 +387,30 @@ model UserStepProgress {
   @@index([stepId, isCompleted]) // For step completion analytics
   @@index([userId, lastPracticedAt]) // For recent practice queries
   @@map("user_step_progress")
+}
+
+model UserBranchProgress {
+  id                 String    @id @default(cuid())
+  userId             String
+  branchId           String
+  questionsAttempted Int       @default(0)
+  questionsCorrect   Int       @default(0)
+  totalTimeSpent     Int       @default(0) // in seconds
+  lastPracticedAt    DateTime?
+  streak             Int       @default(0) // Current streak
+  bestStreak         Int       @default(0) // Best streak ever
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relationships
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId])
+  // Optimized indexes
+  @@index([userId, lastPracticedAt]) // For recent practice queries
+  @@index([branchId, questionsCorrect]) // For branch leaderboards
+  @@map("user_branch_progress")
 }
 
 model CustomPracticeSet {

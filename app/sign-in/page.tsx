@@ -2,12 +2,10 @@
 import React, { useState } from "react";
 import {
   Mail,
-  BookOpen,
   Send,
   MessageCircle,
   ExternalLink,
   ArrowRight,
-  Sparkles,
 } from "lucide-react";
 
 import {
@@ -61,7 +59,8 @@ export default function SignInPage() {
       // Replace with your actual magic link API call
       const { data, error } = await authClient.signIn.magicLink({
         email: signInData.email,
-        callbackURL: "/dashboard/practice", //redirect after successful login (optional)
+        callbackURL: "/dashboard/practice",
+        newUserCallbackURL: "/profile",
       });
       console.log("Magic link sent:", data);
       if (error) {
