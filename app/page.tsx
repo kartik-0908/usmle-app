@@ -10,5 +10,5 @@ export default async function Page() {
   if (!session) {
     redirect("/sign-in");
   }
-  return redirect("/dashboard/practice", RedirectType.replace);
+  return redirect("/dashboard/home", RedirectType.replace);
 }

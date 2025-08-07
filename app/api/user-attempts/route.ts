@@ -1,7 +1,7 @@
 // app/api/user-attempts/route.ts
-import prisma from '@/lib/db';
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import prisma from "@/lib/db";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 // Schema for validating the request body
 const createUserAttemptSchema = z.object({
@@ -15,10 +15,10 @@ const createUserAttemptSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     // Validate the request body
     const validatedData = createUserAttemptSchema.parse(body);
-    
+
     // Create the user attempt in the database
     const userAttempt = await prisma.userAttempt.create({
       data: {
@@ -47,23 +47,58 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const state = await prisma.userQuestionState.findUnique({
+      where: {
+        userId_questionId: {
+          userId: validatedData.userId,
+          questionId: validatedData.questionId,
+        },
+      },
+    });
+
+    if (!state) {
+      await prisma.userQuestionState.create({
+        data: {
+          userId: validatedData.userId,
+          questionId: validatedData.questionId,
+          isMarked: false, // Default value, can be updated later
+        },
+      });
+    } else {
+      await prisma.userQuestionState.update({
+        where: {
+          userId_questionId: {
+            userId: validatedData.userId,
+            questionId: validatedData.questionId,
+          },
+        },
+        data: {
+          isUsed: true, // Keep the existing state
+        },
+      });
+    }
+
     // Optionally update user progress statistics
-    await updateUserProgress(validatedData.userId, validatedData.questionId, validatedData.isCorrect, validatedData.timeSpent);
+    await updateUserProgress(
+      validatedData.userId,
+      validatedData.questionId,
+      validatedData.isCorrect,
+      validatedData.timeSpent
+    );
 
     return NextResponse.json({
       success: true,
       data: userAttempt,
-      message: 'Attempt saved successfully',
+      message: "Attempt saved successfully",
     });
-
   } catch (error) {
-    console.error('Error saving user attempt:', error);
-    
+    console.error("Error saving user attempt:", error);
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Invalid request data',
+          error: "Invalid request data",
           details: error.errors,
         },
         { status: 400 }
@@ -73,8 +108,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Internal server error',
-        message: 'Failed to save attempt',
+        error: "Internal server error",
+        message: "Failed to save attempt",
       },
       { status: 500 }
     );
@@ -82,7 +117,12 @@ export async function POST(request: NextRequest) {
 }
 
 // Function to update user progress statistics
-async function updateUserProgress(userId: string, questionId: string, isCorrect: boolean, timeSpent: number) {
+async function updateUserProgress(
+  userId: string,
+  questionId: string,
+  isCorrect: boolean,
+  timeSpent: number
+) {
   try {
     // Get question with its topic and step relationships
     const question = await prisma.question.findUnique({
@@ -92,9 +132,8 @@ async function updateUserProgress(userId: string, questionId: string, isCorrect:
     if (!question) return;
 
     // Update progress for each topic this question belongs to
-    
   } catch (error) {
-    console.error('Error updating user progress:', error);
+    console.error("Error updating user progress:", error);
     // Don't throw here as the main attempt was already saved
   }
 }
@@ -103,14 +142,14 @@ async function updateUserProgress(userId: string, questionId: string, isCorrect:
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const questionId = searchParams.get('questionId');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const userId = searchParams.get("userId");
+    const questionId = searchParams.get("questionId");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const offset = parseInt(searchParams.get("offset") || "0");
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'userId is required' },
+        { error: "userId is required" },
         { status: 400 }
       );
     }
@@ -133,7 +172,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: {
-        attemptedAt: 'desc',
+        attemptedAt: "desc",
       },
       take: limit,
       skip: offset,
@@ -151,11 +190,10 @@ export async function GET(request: NextRequest) {
         hasMore: total > offset + limit,
       },
     });
-
   } catch (error) {
-    console.error('Error fetching user attempts:', error);
+    console.error("Error fetching user attempts:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
