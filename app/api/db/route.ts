@@ -5,8 +5,8 @@ export async function GET(request: Request) {
     console.log("categorizing questions ...");
     // await saveExaplanation();
     // categorizeQuestions();
-    // await insertStepDisciplines("step2");
-    // await insertStepSystems("step2");
+    // await insertStepDisciplines("0b40bcf0-fd3e-4002-9979-9d3063653223");
+    // await insertStepSystems("0b40bcf0-fd3e-4002-9979-9d3063653223");
     await categorizeQuestionsWithAI()
     // importQuestions();
     // await prisma.question.deleteMany()
@@ -306,7 +306,7 @@ async function categorizeQuestionsWithAI(
     batchSize = 10,
     startFromId,
     onlyUncategorized = true,
-    delayBetweenRequests = 1000, // 1 second delay to respect rate limits
+    delayBetweenRequests = 200, // 1 second delay to respect rate limits
     specificStepId,
   } = options;
 
@@ -544,29 +544,29 @@ async function categorizeQuestionsWithAI(
 
 
 async function insertStepDisciplines(stepId: string) {
-  // const disciplines = [
-  //   "Pathology",
-  //   "Physiology",
-  //   "Pharmacology",
-  //   "Anatomy",
-  //   "Microbiology",
-  //   "Embryology",
-  //   "Biochemistry",
-  //   "Genetics",
-  //   "Immunology",
-  //   "Behavioral Science",
-  // ];
   const disciplines = [
-    "Internal Medicine",
-    "Surgery",
-    "Pediatrics",
-    "Psychiatry",
-    "Obstetrics & Gynecology",
-    "Preventive Medicine",
-    "Emergency Medicine",
-    "Ethics / Communication",
-    "Epidemiology / Biostatistics",
+    "Pathology",
+    "Physiology",
+    "Pharmacology",
+    "Anatomy",
+    "Microbiology",
+    "Embryology",
+    "Biochemistry",
+    "Genetics",
+    "Immunology",
+    "Behavioral Science",
   ];
+  // const disciplines = [
+  //   "Internal Medicine",
+  //   "Surgery",
+  //   "Pediatrics",
+  //   "Psychiatry",
+  //   "Obstetrics & Gynecology",
+  //   "Preventive Medicine",
+  //   "Emergency Medicine",
+  //   "Ethics / Communication",
+  //   "Epidemiology / Biostatistics",
+  // ];
 
   try {
     // Insert all disciplines for the step with proper ordering
@@ -593,37 +593,37 @@ async function insertStepDisciplines(stepId: string) {
 }
 
  async function insertStepSystems(stepId: string) {
-  // const systems = [
-  //   "Cardiovascular",
-  //   "Endocrine",
-  //   "Gastrointestinal",
-  //   "Hematology & Oncology",
-  //   "Musculoskeletal",
-  //   "Nervous & Special Senses",
-  //   "Renal & Urinary",
-  //   "Reproductive",
-  //   "Respiratory",
-  //   "Skin & Subcutaneous Tissue",
-  //   "Multisystem Disorders",
-  // ];
   const systems = [
     "Cardiovascular",
-    "Endocrine / Diabetes",
+    "Endocrine",
     "Gastrointestinal",
     "Hematology & Oncology",
-    "Infectious Diseases",
-    "Musculoskeletal / Rheumatology",
-    "Neurology",
-    "Obstetrics & Gynecology",
-    "Pediatrics",
-    "Psychiatry",
-    "Pulmonary / Critical Care",
-    "Renal / Urology",
-    "Dermatology",
-    "Emergency Medicine",
-    "Preventive Medicine",
-    "Multisystem / Miscellaneous",
+    "Musculoskeletal",
+    "Nervous & Special Senses",
+    "Renal & Urinary",
+    "Reproductive",
+    "Respiratory",
+    "Skin & Subcutaneous Tissue",
+    "Multisystem Disorders",
   ];
+  // const systems = [
+  //   "Cardiovascular",
+  //   "Endocrine / Diabetes",
+  //   "Gastrointestinal",
+  //   "Hematology & Oncology",
+  //   "Infectious Diseases",
+  //   "Musculoskeletal / Rheumatology",
+  //   "Neurology",
+  //   "Obstetrics & Gynecology",
+  //   "Pediatrics",
+  //   "Psychiatry",
+  //   "Pulmonary / Critical Care",
+  //   "Renal / Urology",
+  //   "Dermatology",
+  //   "Emergency Medicine",
+  //   "Preventive Medicine",
+  //   "Multisystem / Miscellaneous",
+  // ];
 
   try {
     // Insert all systems for the step with proper ordering
