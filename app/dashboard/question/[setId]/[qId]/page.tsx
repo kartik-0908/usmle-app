@@ -50,15 +50,6 @@ export default async function Page({
                       order: "asc",
                     },
                   },
-                  questionTopics: {
-                    include: {
-                      topic: {
-                        select: {
-                          name: true,
-                        },
-                      },
-                    },
-                  },
                 },
               },
             },
@@ -129,7 +120,6 @@ export default async function Page({
     options: currentQuestion.question.options.map((option) => option.text),
     correctAnswer: correctAnswer,
     explanation: currentQuestion.question.explanation || "",
-    tags: currentQuestion.question.questionTopics.map((qt) => qt.topic.name),
     image: undefined, // Add image field if you have it in your schema
   };
 

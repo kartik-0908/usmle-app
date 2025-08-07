@@ -1,12 +1,12 @@
 // app/api/practice-sets/filter-counts/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import { auth } from "@/app/lib/auth";
 import { headers } from "next/headers";
 import prisma from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('insdie filter-counts get route')
     const session = await auth.api.getSession({
       headers: await headers(), // you need to pass the headers object.
     });
@@ -46,14 +46,6 @@ export async function GET(request: NextRequest) {
     // Build where clause for questions based on selected filters
     const whereClause: any = {
       isActive: true,
-      questionTopics: {
-        some: {
-          topic: {
-            stepId: step1.id,
-            isActive: true,
-          },
-        },
-      },
     };
 
     // Apply system and discipline filters if any are selected

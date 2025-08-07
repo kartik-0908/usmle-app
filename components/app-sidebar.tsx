@@ -8,6 +8,7 @@ import {
   IconPencil,
   IconGraph,
   IconBrandLine,
+  IconHome,
 } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -27,6 +28,12 @@ import Image from "next/image";
 const data = {
   navMain: [
     {
+      title: "Home",
+      url: "/dashboard/home",
+      icon: IconHome,
+      isComingSoon: false,
+    },
+    {
       title: "Practice",
       url: "#",
       icon: IconPencil,
@@ -34,11 +41,11 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Topic-wise",
+          title: "Create New Set",
           url: "/dashboard/practice",
         },
         {
-          title: "Build Your Own Set",
+          title: "Previous Practice Sets",
           url: "/dashboard/practice-custom",
         },
       ],

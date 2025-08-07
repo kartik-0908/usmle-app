@@ -6,10 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Settings } from "lucide-react";
+import { Loader2, Settings } from "lucide-react";
 import { usePracticeSetCreator } from "@/hooks/usePracticeSetCreator";
 import { STATUS_LABELS, DIFFICULTY_LABELS } from "@/lib/types/practice-set";
 
@@ -32,9 +31,10 @@ const CustomPracticeSetCreator: React.FC = () => {
 
   const handleCreateAndNavigate = async () => {
     const result = await createPracticeSet();
+    console.log("Practice set created:", result);
     if (result) {
       // Navigate to the created practice set
-      window.location.href = `/practice/${result.id}`;
+      window.location.href = `/dashboard/question/${result.practiceSetId}`;
     }
   };
 
@@ -52,8 +52,8 @@ const CustomPracticeSetCreator: React.FC = () => {
       <Card className="border-0 shadow-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Create Custom Practice Set
+            {/* <Plus className="h-5 w-5" /> */}
+            Create Practice Set for Step 1
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -68,7 +68,6 @@ const CustomPracticeSetCreator: React.FC = () => {
                 onChange={(e) => updateForm({ name: e.target.value })}
               />
             </div>
-
 
             <div className="flex-1">
               <Label htmlFor="maxQuestions">Maximum Questions *</Label>

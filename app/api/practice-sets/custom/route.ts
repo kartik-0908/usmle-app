@@ -23,6 +23,7 @@ interface CreatePracticeSetRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('inside custom post route')
     const session = await auth.api.getSession({
       headers: await headers(), // you need to pass the headers object.
     });
@@ -57,14 +58,6 @@ export async function POST(request: NextRequest) {
     // Build the where clause for question filtering
     const whereClause: any = {
       isActive: true,
-      questionTopics: {
-        some: {
-          topic: {
-            stepId: step1.id,
-            isActive: true,
-          },
-        },
-      },
     };
 
     // Add difficulty filter
@@ -78,7 +71,7 @@ export async function POST(request: NextRequest) {
     if (body.filters.systems.length > 0) {
       whereClause.OR = [
         {
-          questionSystems: {
+          QuestionSystem: {
             some: {
               system: { in: body.filters.systems },
             },
@@ -94,7 +87,7 @@ export async function POST(request: NextRequest) {
     if (body.filters.disciplines.length > 0) {
       const disciplineCondition = [
         {
-          questionDisciplines: {
+          QuestionDiscipline: {
             some: {
               discipline: { in: body.filters.disciplines },
             },
@@ -124,12 +117,7 @@ export async function POST(request: NextRequest) {
         UserQuestionState: {
           where: { userId },
           select: { isUsed: true, isMarked: true },
-        },
-        questionTopics: {
-          include: {
-            topic: true,
-          },
-        },
+        }
       },
     });
 
@@ -190,18 +178,7 @@ export async function POST(request: NextRequest) {
         name: body.name.trim(),
         description: body.description?.trim() || null,
         totalQuestions: shuffledQuestions.length,
-        userId: userId,
-        topics: {
-          create: [
-            ...new Set(
-              shuffledQuestions.flatMap((q) =>
-                q.questionTopics.map((qt) => qt.topicId)
-              )
-            ),
-          ].map((topicId) => ({
-            topicId: topicId,
-          })),
-        },
+        userId: userId
       },
     });
 

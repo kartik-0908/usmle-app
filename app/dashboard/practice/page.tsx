@@ -15,15 +15,15 @@ export default async function Page() {
     {
       id: "0b40bcf0-fd3e-4002-9979-9d3063653223",
       name: "Step-1",
-      slug: "basic-sciences",
+      slug: "step1",
       description: "Foundational medical sciences and organ systems",
     },
-    {
-      id: "a12bc377-b97c-4a62-9f74-a86cc82fdcf7",
-      name: "Step-2",
-      slug: "clinical-sciences",
-      description: "Clinical medicine and physician skills",
-    },
+    // {
+    //   id: "a12bc377-b97c-4a62-9f74-a86cc82fdcf7",
+    //   name: "Step-2",
+    //   slug: "step2",
+    //   description: "Clinical medicine and physician skills",
+    // },
   ];
 
   if (!data) {

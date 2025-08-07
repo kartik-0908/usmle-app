@@ -6,16 +6,6 @@ export async function getStepsWithTopics() {
     where: {
       isActive: true,
     },
-    include: {
-      topics: {
-        where: {
-          isActive: true,
-        },
-        orderBy: {
-          order: 'asc',
-        },
-      },
-    },
     orderBy: {
       order: 'asc',
     },

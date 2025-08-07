@@ -15,15 +15,14 @@ export default async function PracticeSetsPage() {
    if (!session) {
      redirect("/sign-in");
    }
-  const [practiceSets, steps] = await Promise.all([
+  const [practiceSets] = await Promise.all([
     getUserCustomPracticeSets(session.user.id),
-    getStepsWithTopics(),
+
   ]);
 
   return (
     <CustomPracticeSetsPage
       initialPracticeSets={practiceSets}
-      steps={steps}
       userId={session.user.id}
     />
   );

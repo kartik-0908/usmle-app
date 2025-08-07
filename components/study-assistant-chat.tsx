@@ -28,7 +28,6 @@ export const practiceQuestionSchema = z.object({
   options: z.array(z.string()).optional(),
   correctAnswer: z.string(),
   explanation: z.string(),
-  tags: z.array(z.string()),
   image: z.string().optional(),
   timeLimit: z.number().optional(),
 });
@@ -165,7 +164,6 @@ export function StudyAssistantChat({
         id: question.id,
         question: question.question,
         options: question.options,
-        tags: question.tags,
         explanation: question.explanation,
         userAnswer,
         showAnswer,

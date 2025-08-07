@@ -87,96 +87,12 @@ async function updateUserProgress(userId: string, questionId: string, isCorrect:
     // Get question with its topic and step relationships
     const question = await prisma.question.findUnique({
       where: { id: questionId },
-      include: {
-        questionTopics: {
-          include: {
-            topic: {
-              include: {
-                step: true,
-              },
-            },
-          },
-        },
-      },
     });
 
     if (!question) return;
 
     // Update progress for each topic this question belongs to
-    for (const questionTopic of question.questionTopics) {
-      const topicId = questionTopic.topicId;
-      const stepId = questionTopic.topic.stepId;
-
-      // Update or create topic progress
-      await prisma.userTopicProgress.upsert({
-        where: {
-          userId_topicId: {
-            userId,
-            topicId,
-          },
-        },
-        update: {
-          questionsAttempted: {
-            increment: 1,
-          },
-          questionsCorrect: isCorrect
-            ? {
-                increment: 1,
-              }
-            : undefined,
-          totalTimeSpent: {
-            increment: timeSpent,
-          },
-          lastPracticedAt: new Date(),
-          // Update streak logic here if needed
-        },
-        create: {
-          userId,
-          topicId,
-          questionsAttempted: 1,
-          questionsCorrect: isCorrect ? 1 : 0,
-          totalTimeSpent: timeSpent,
-          lastPracticedAt: new Date(),
-          streak: isCorrect ? 1 : 0,
-          bestStreak: isCorrect ? 1 : 0,
-        },
-      });
-
-      // Update or create step progress
-      await prisma.userStepProgress.upsert({
-        where: {
-          userId_stepId: {
-            userId,
-            stepId,
-          },
-        },
-        update: {
-          questionsAttempted: {
-            increment: 1,
-          },
-          questionsCorrect: isCorrect
-            ? {
-                increment: 1,
-              }
-            : undefined,
-          totalTimeSpent: {
-            increment: timeSpent,
-          },
-          lastPracticedAt: new Date(),
-        },
-        create: {
-          userId,
-          stepId,
-          questionsAttempted: 1,
-          questionsCorrect: isCorrect ? 1 : 0,
-          totalTimeSpent: timeSpent,
-          lastPracticedAt: new Date(),
-          streak: isCorrect ? 1 : 0,
-          bestStreak: isCorrect ? 1 : 0,
-          isCompleted: false,
-        },
-      });
-    }
+    
   } catch (error) {
     console.error('Error updating user progress:', error);
     // Don't throw here as the main attempt was already saved

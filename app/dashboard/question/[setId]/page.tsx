@@ -30,16 +30,6 @@ export default async function Page({
       isActive: true,
     },
     include: {
-      topics: {
-        include: {
-          topic: {
-            select: {
-              name: true,
-              slug: true,
-            },
-          },
-        },
-      },
       userPracticeSets: {
         where: {
           userId: userId,
@@ -56,15 +46,6 @@ export default async function Page({
                   options: {
                     orderBy: {
                       order: 'asc',
-                    },
-                  },
-                  questionTopics: {
-                    include: {
-                      topic: {
-                        select: {
-                          name: true,
-                        },
-                      },
                     },
                   },
                 },
@@ -90,7 +71,7 @@ export default async function Page({
             The practice set you're looking for doesn't exist or you don't have access to it.
           </p>
           <a
-            href="/practice-sets"
+            href="/dashboard/practice-custom"
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Back to Practice Sets
@@ -105,32 +86,14 @@ export default async function Page({
   // If no user practice set exists or no questions generated, generate them
   if (!userPracticeSet || userPracticeSet.generatedQuestions.length === 0) {
     // Generate questions from the selected topics
-    const topicIds = customPracticeSet.topics.map(t => t.topicId);
-    
     const availableQuestions = await prisma.question.findMany({
       where: {
         isActive: true,
-        questionTopics: {
-          some: {
-            topicId: {
-              in: topicIds,
-            },
-          },
-        },
       },
       include: {
         options: {
           orderBy: {
             order: 'asc',
-          },
-        },
-        questionTopics: {
-          include: {
-            topic: {
-              select: {
-                name: true,
-              },
-            },
           },
         },
       },
@@ -147,7 +110,7 @@ export default async function Page({
               There are no questions available for the selected topics in this practice set.
             </p>
             <a
-              href="/practice-sets"
+              href="/dashboard/practice-custom"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Back to Practice Sets
@@ -203,7 +166,6 @@ export default async function Page({
       difficulty: question.difficulty,
       questionType: question.questionType,
       options: question.options,
-      topics: question.questionTopics.map(qt => qt.topic.name),
       order: index + 1,
     }));
 
@@ -214,7 +176,6 @@ export default async function Page({
           name: customPracticeSet.name,
           description: customPracticeSet.description,
           totalQuestions: customPracticeSet.totalQuestions,
-          topics: customPracticeSet.topics.map(t => t.topic.name),
         }}
         userPracticeSet={{
           id: updatedUserPracticeSet.id,
@@ -237,7 +198,7 @@ export default async function Page({
     difficulty: gq.question.difficulty,
     questionType: gq.question.questionType,
     options: gq.question.options,
-    topics: gq.question.questionTopics.map(qt => qt.topic.name),
+    // topics: gq.question.questionTopics.map(qt => qt.topic.name),
     order: gq.order,
   }));
 
@@ -248,7 +209,7 @@ export default async function Page({
         name: customPracticeSet.name,
         description: customPracticeSet.description,
         totalQuestions: customPracticeSet.totalQuestions,
-        topics: customPracticeSet.topics.map(t => t.topic.name),
+        // topics: customPracticeSet.topics.map(t => t.topic.name),
       }}
       userPracticeSet={{
         id: userPracticeSet.id,

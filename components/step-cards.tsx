@@ -31,7 +31,7 @@ export function StepCards({
             <Link
               key={step.id}
               prefetch={true}
-              href={`/dashboard/practice/${step.slug}`}
+              href={`/dashboard/practice/custom/${step.slug}`}
               className="group"
             >
               <Card className="@container/card h-36 cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] bg-gradient-to-t from-primary/5 to-card dark:bg-card shadow-xs flex flex-col">

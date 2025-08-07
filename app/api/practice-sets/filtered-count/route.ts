@@ -18,11 +18,13 @@ interface FilterRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("inside filtered count post route");
     const session = await auth.api.getSession({
       headers: await headers(), // you need to pass the headers object.
     });
     const userId = session?.user?.id || "";
     const filters: FilterRequest = await request.json();
+    console.log("inside filtered count post route filters:", filters);
 
     // Get Step 1 data
     const step1 = await prisma.step.findUnique({
@@ -36,14 +38,6 @@ export async function POST(request: NextRequest) {
     // Build the where clause
     const whereClause: any = {
       isActive: true,
-      questionTopics: {
-        some: {
-          topic: {
-            stepId: step1.id,
-            isActive: true,
-          },
-        },
-      },
     };
 
     // Add difficulty filter

@@ -19,7 +19,6 @@ import {
   Clock,
   BookOpen,
   CheckCircle,
-  XCircle,
   AlertCircle
 } from 'lucide-react';
 
@@ -42,7 +41,6 @@ interface Question {
   difficulty: Difficulty;
   questionType: QuestionType;
   options: Option[];
-  topics: string[];
   order: number;
 }
 
@@ -51,7 +49,6 @@ interface PracticeSet {
   name: string;
   description?: string | null;
   totalQuestions: number;
-  topics: string[];
 }
 
 interface UserPracticeSet {
@@ -94,21 +91,6 @@ const getStatusColor = (status: PracticeSetStatus) => {
       return 'bg-orange-100 text-orange-800';
     default:
       return 'bg-gray-100 text-gray-800';
-  }
-};
-
-const formatQuestionType = (type: QuestionType) => {
-  switch (type) {
-    case 'MULTIPLE_CHOICE':
-      return 'Multiple Choice';
-    case 'TRUE_FALSE':
-      return 'True/False';
-    case 'FILL_IN_BLANK':
-      return 'Fill in Blank';
-    case 'MULTIPLE_SELECT':
-      return 'Multiple Select';
-    default:
-      return type;
   }
 };
 
@@ -162,7 +144,7 @@ export default function PracticeSetClient({
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" size="sm" asChild>
-          <a href="/practice-sets" className="flex items-center gap-2">
+          <a href="/dashboard/practice-custom" className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Practice Sets
           </a>
@@ -189,13 +171,13 @@ export default function PracticeSetClient({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2 mb-4">
+              {/* <div className="flex flex-wrap gap-2 mb-4">
                 {practiceSet.topics.map((topic, index) => (
                   <Badge key={index} variant="outline">
                     {topic}
                   </Badge>
                 ))}
-              </div>
+              </div> */}
               
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                 <div className="flex items-center gap-2">
@@ -289,7 +271,7 @@ export default function PracticeSetClient({
                   <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Question</th>
                   {/* <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Type</th> */}
                   {/* <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Difficulty</th> */}
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Topics</th>
+                  {/* <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Topics</th> */}
                   {/* <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Options</th> */}
                 </tr>
               </thead>
@@ -321,7 +303,7 @@ export default function PracticeSetClient({
                       </Badge>
                     </td> */}
                     <td className="p-4 align-middle">
-                      <div className="flex flex-wrap gap-1">
+                      {/* <div className="flex flex-wrap gap-1">
                         {question.topics.slice(0, 2).map((topic, topicIndex) => (
                           <Badge key={topicIndex} variant="secondary" className="text-xs">
                             {topic}
@@ -332,7 +314,7 @@ export default function PracticeSetClient({
                             +{question.topics.length - 2}
                           </Badge>
                         )}
-                      </div>
+                      </div> */}
                     </td>
                     {/* <td className="p-4 align-middle">
                       <div className="flex items-center gap-2 text-sm">

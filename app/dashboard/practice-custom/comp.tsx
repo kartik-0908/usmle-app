@@ -1,14 +1,18 @@
 "use client";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,34 +20,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
   Plus,
   MoreHorizontal,
   Play,
-  Edit,
   Trash2,
   Calendar,
-  Target,
   BookOpen,
-  Loader2,
 } from "lucide-react";
+import Link from "next/link";
 
 // Types
 type PracticeSetStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "PAUSED";
@@ -56,22 +40,13 @@ interface Topic {
   isActive: boolean;
 }
 
-interface Step {
-  id: string;
-  name: string;
-  slug: string;
-  stepNumber: number;
-  isActive: boolean;
-  topics: Topic[];
-}
-
 interface CustomPracticeSet {
   id: string;
   name: string;
   description?: string | null;
   totalQuestions: number;
-  topicCount: number;
-  topics: string[];
+  // topicCount: number;
+  // topics: string[];
   status: PracticeSetStatus;
   createdAt: Date;
   lastAttempted: Date | null;
@@ -93,7 +68,6 @@ interface CreatePracticeSetForm {
 
 interface CustomPracticeSetsPageProps {
   initialPracticeSets: CustomPracticeSet[];
-  steps: Step[];
   userId: string;
 }
 
@@ -139,19 +113,18 @@ const getScorePercentage = (
 
 export default function CustomPracticeSetsPage({
   initialPracticeSets,
-  steps,
   userId,
 }: CustomPracticeSetsPageProps): React.ReactElement {
   const [practiceSets, setPracticeSets] =
     useState<CustomPracticeSet[]>(initialPracticeSets);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [form, setForm] = useState<CreatePracticeSetForm>({
     name: "",
     description: "",
     totalQuestions: 10,
     selectedTopics: [],
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [practiceSetToDelete, setPracticeSetToDelete] = useState<CustomPracticeSet | null>(null);
 
   const handleInputChange = (
     field: keyof CreatePracticeSetForm,
@@ -169,57 +142,22 @@ export default function CustomPracticeSetsPage({
     }));
   };
 
-  const handleCreatePracticeSet = async () => {
-    if (!form.name || form.selectedTopics.length === 0) return;
-
-    setIsCreating(true);
-    try {
-      const response = await fetch("/api/custom-practice-sets", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...form,
-          userId,
-        }),
-      });
-
-      if (response.ok) {
-        const newPracticeSet = await response.json();
-        console.log("New practice set created:", newPracticeSet);
-        setPracticeSets((prev) => [newPracticeSet, ...prev]);
-        setIsDialogOpen(false);
-        setForm({
-          name: "",
-          description: "",
-          totalQuestions: 10,
-          selectedTopics: [],
-        });
-      }
-    } catch (error) {
-      console.error("Error creating practice set:", error);
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
   const handleStartPractice = async (practiceSetId: string) => {
     // Navigate to practice session or handle start logic
     window.location.href = `/dashboard/question/${practiceSetId}`;
   };
 
-  const handleEditSet = (practiceSetId: string) => {
-    // Navigate to edit page or open edit dialog
-    console.log("Edit set:", practiceSetId);
+  const handleDeleteClick = (practiceSet: CustomPracticeSet) => {
+    setPracticeSetToDelete(practiceSet);
+    setDeleteDialogOpen(true);
   };
 
-  const handleDeleteSet = async (practiceSetId: string) => {
-    if (!confirm("Are you sure you want to delete this practice set?")) return;
+  const handleDeleteConfirm = async () => {
+    if (!practiceSetToDelete) return;
 
     try {
       const response = await fetch(
-        `/api/custom-practice-sets/${practiceSetId}`,
+        `/api/custom-practice-sets/${practiceSetToDelete.id}`,
         {
           method: "DELETE",
         }
@@ -227,18 +165,21 @@ export default function CustomPracticeSetsPage({
 
       if (response.ok) {
         setPracticeSets((prev) =>
-          prev.filter((set) => set.id !== practiceSetId)
+          prev.filter((set) => set.id !== practiceSetToDelete.id)
         );
       }
     } catch (error) {
       console.error("Error deleting practice set:", error);
+    } finally {
+      setDeleteDialogOpen(false);
+      setPracticeSetToDelete(null);
     }
   };
 
-  const selectedTopicNames = steps
-    .flatMap((step) => step.topics)
-    .filter((topic) => form.selectedTopics.includes(topic.id))
-    .map((topic) => topic.name);
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setPracticeSetToDelete(null);
+  };
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -251,13 +192,6 @@ export default function CustomPracticeSetsPage({
             Create and manage your personalized practice sessions
           </p>
         </div>
-        <Button
-          onClick={() => setIsDialogOpen(true)}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Create New Set
-        </Button>
       </div>
 
       {practiceSets.length === 0 ? (
@@ -268,10 +202,12 @@ export default function CustomPracticeSetsPage({
             <p className="text-muted-foreground mb-6">
               Create your first custom practice set to get started
             </p>
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Your First Set
-            </Button>
+            <Link href={'/dashboard/practice'}>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First Set
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       ) : (
@@ -282,9 +218,9 @@ export default function CustomPracticeSetsPage({
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
                   Name
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                {/* <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
                   Topics
-                </th>
+                </th> */}
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
                   Questions
                 </th>
@@ -325,7 +261,7 @@ export default function CustomPracticeSetsPage({
                         )}
                       </div>
                     </td>
-                    <td className="p-4 align-middle">
+                    {/* <td className="p-4 align-middle">
                       <div className="flex flex-wrap gap-1">
                         {practiceSet.topics.slice(0, 2).map((topic, index) => (
                           <Badge
@@ -342,7 +278,7 @@ export default function CustomPracticeSetsPage({
                           </Badge>
                         )}
                       </div>
-                    </td>
+                    </td> */}
                     <td className="p-4 align-middle font-medium">
                       {practiceSet.totalQuestions}
                     </td>
@@ -394,7 +330,7 @@ export default function CustomPracticeSetsPage({
                           </DropdownMenuItem>
 
                           <DropdownMenuItem
-                            onClick={() => handleDeleteSet(practiceSet.id)}
+                            onClick={() => handleDeleteClick(practiceSet)}
                             className="flex items-center gap-2 text-red-600 focus:text-red-600"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -411,161 +347,29 @@ export default function CustomPracticeSetsPage({
         </div>
       )}
 
-      {/* Create Practice Set Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Practice Set</DialogTitle>
-            <DialogDescription>
-              Choose topics and set the number of questions for your custom
-              practice session.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Practice Set Name</Label>
-                <Input
-                  id="name"
-                  value={form.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  placeholder="Enter a name for your practice set"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="description">Description (Optional)</Label>
-                <Textarea
-                  id="description"
-                  value={form.description || ""}
-                  onChange={(e) =>
-                    handleInputChange("description", e.target.value)
-                  }
-                  placeholder="Describe what this practice set covers"
-                  className="mt-1"
-                  rows={2}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="totalQuestions">Total Questions</Label>
-                <Input
-                  id="totalQuestions"
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={form.totalQuestions}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "totalQuestions",
-                      parseInt(e.target.value) || 1
-                    )
-                  }
-                  className="mt-1"
-                />
-              </div>
-            </div>
-
-            {/* Topic Selection */}
-            <div>
-              <Label className="text-base font-medium">Select Topics</Label>
-              <p className="text-sm text-muted-foreground mb-4">
-                Choose the topics you want to practice. Questions will be
-                randomly selected from these topics.
-              </p>
-
-              {form.selectedTopics.length > 0 && (
-                <div className="mb-4 p-3 bg-muted rounded-lg">
-                  <p className="text-sm font-medium mb-2">
-                    Selected Topics ({form.selectedTopics.length}):
-                  </p>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedTopicNames.map((topicName, index) => (
-                      <Badge key={index} variant="default" className="text-xs">
-                        {topicName}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <Accordion type="multiple" className="w-full">
-                {steps
-                  .filter((step) => step.isActive)
-                  .map((step) => (
-                    <AccordionItem key={step.id} value={step.id}>
-                      <AccordionTrigger className="text-left">
-                        <div className="flex items-center justify-between w-full mr-4">
-                          <span>{step.name}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {
-                              step.topics.filter((topic) => topic.isActive)
-                                .length
-                            }{" "}
-                            topics
-                          </Badge>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-3 pt-2">
-                          {step.topics
-                            .filter((topic) => topic.isActive)
-                            .map((topic) => (
-                              <div
-                                key={topic.id}
-                                className="flex items-center space-x-2"
-                              >
-                                <Checkbox
-                                  id={topic.id}
-                                  checked={form.selectedTopics.includes(
-                                    topic.id
-                                  )}
-                                  onCheckedChange={(checked) =>
-                                    handleTopicToggle(
-                                      topic.id,
-                                      checked as boolean
-                                    )
-                                  }
-                                />
-                                <Label
-                                  htmlFor={topic.id}
-                                  className="text-sm font-normal cursor-pointer"
-                                >
-                                  {topic.name}
-                                </Label>
-                              </div>
-                            ))}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-              </Accordion>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDialogOpen(false)}
-              disabled={isCreating}
-            >
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Practice Set</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{practiceSetToDelete?.name}"? This action cannot be undone and will permanently remove the practice set and all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDeleteCancel}>
               Cancel
-            </Button>
-            <Button
-              onClick={handleCreatePracticeSet}
-              disabled={
-                !form.name || form.selectedTopics.length === 0 || isCreating
-              }
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
             >
-              {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Practice Set
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
