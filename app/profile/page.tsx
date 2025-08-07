@@ -163,7 +163,7 @@ const MedicalStudentForm: React.FC = () => {
       toast.success(
         "Registration completed successfully! Redirecting to dashboard..."
       );
-      router.push("/dashboard/practice");
+      router.push("/dashboard/home");
     } catch (error) {
       console.error("Submission error:", error);
     } finally {
