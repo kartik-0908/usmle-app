@@ -63,7 +63,7 @@ export function LatestQuestionPracticeScreen({
   const [isSubmitting, setIsSubmitting] = React.useState(false); // Add loading state
 
   // Layout state - Start with default to avoid hydration mismatch
-  const [questionWidth, setQuestionWidth] = React.useState(66.67); // Default to 2/3 (66.67%)
+  const [questionWidth, setQuestionWidth] = React.useState(50);
   const [isResizing, setIsResizing] = React.useState(false);
   const [isMounted, setIsMounted] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -72,7 +72,7 @@ export function LatestQuestionPracticeScreen({
   React.useEffect(() => {
     setIsMounted(true);
     try {
-      const savedWidth = localStorage.getItem("questionPracticeWidth");
+      const savedWidth = localStorage.getItem("sg-questionPracticeWidth");
       if (savedWidth) {
         setQuestionWidth(parseFloat(savedWidth));
       }
@@ -86,7 +86,7 @@ export function LatestQuestionPracticeScreen({
     if (!isMounted) return; // Don't save during initial hydration
 
     try {
-      localStorage.setItem("questionPracticeWidth", questionWidth.toString());
+      localStorage.setItem("sg-questionPracticeWidth", questionWidth.toString());
     } catch (error) {
       console.log("Could not save layout preference");
     }

@@ -12,8 +12,6 @@ import {
   IconLayoutSidebarRightCollapse,
 } from "@tabler/icons-react";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
-
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
@@ -57,7 +55,6 @@ export function QuestionPracticeScreen({
   topicSlug,
   subtopicSlug,
 }: QuestionPracticeScreenProps) {
-  const router = useRouter();
   const [selectedAnswer, setSelectedAnswer] = React.useState<string>("");
   const [showAnswer, setShowAnswer] = React.useState(false);
   const [isCorrect, setIsCorrect] = React.useState<boolean | null>(null);
@@ -65,7 +62,7 @@ export function QuestionPracticeScreen({
   const [isSubmitting, setIsSubmitting] = React.useState(false); // Add loading state
 
   // Layout state - Start with default to avoid hydration mismatch
-  const [questionWidth, setQuestionWidth] = React.useState(66.67); // Default to 2/3 (66.67%)
+  const [questionWidth, setQuestionWidth] = React.useState(50);
   const [isResizing, setIsResizing] = React.useState(false);
   const [isMounted, setIsMounted] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -74,7 +71,7 @@ export function QuestionPracticeScreen({
   React.useEffect(() => {
     setIsMounted(true);
     try {
-      const savedWidth = localStorage.getItem("questionPracticeWidth");
+      const savedWidth = localStorage.getItem("sg-questionPracticeWidth");
       if (savedWidth) {
         setQuestionWidth(parseFloat(savedWidth));
       }
@@ -88,7 +85,7 @@ export function QuestionPracticeScreen({
     if (!isMounted) return; // Don't save during initial hydration
 
     try {
-      localStorage.setItem("questionPracticeWidth", questionWidth.toString());
+      localStorage.setItem("sg-questionPracticeWidth", questionWidth.toString());
     } catch (error) {
       console.log("Could not save layout preference");
     }

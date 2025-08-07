@@ -36,7 +36,7 @@ model User {
   ChatMessage           ChatMessage[]
   CustomPracticeSet     CustomPracticeSet[]
   UserCustomPracticeSet UserCustomPracticeSet[]
-  UserBranchProgress    UserBranchProgress[]
+  UserQuestionState     UserQuestionState[]
 
   @@map("users")
 }
@@ -55,11 +55,53 @@ model Step {
   // Relationships
   topics           Topic[]
   UserStepProgress UserStepProgress[]
+  StepSystem       StepSystem[]
+  StepDiscipline   StepDiscipline[]
 
   // Optimized indexes
   @@index([isActive, order]) // For active steps ordering
   @@index([slug, isActive]) // For slug lookups with active filter
   @@map("steps")
+}
+
+// New model for managing systems per step
+model StepSystem {
+  id        String   @id @default(cuid())
+  stepId    String
+  system    String
+  isActive  Boolean  @default(true)
+  order     Int      @default(0) // For ordering systems within a step
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  step Step @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([stepId, system]) // Prevent duplicate system-step combinations
+  // Optimized indexes
+  @@index([stepId, isActive, order]) // For getting active systems for a step
+  @@index([system, isActive]) // For finding steps that have a specific system
+  @@map("step_systems")
+}
+
+// New model for managing disciplines per step
+model StepDiscipline {
+  id         String   @id @default(cuid())
+  stepId     String
+  discipline String
+  isActive   Boolean  @default(true)
+  order      Int      @default(0) // For ordering disciplines within a step
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relationships
+  step Step @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([stepId, discipline]) // Prevent duplicate discipline-step combinations
+  // Optimized indexes
+  @@index([stepId, isActive, order]) // For getting active disciplines for a step
+  @@index([discipline, isActive]) // For finding steps that have a specific discipline
+  @@map("step_disciplines")
 }
 
 model Topic {
@@ -104,7 +146,6 @@ model Subtopic {
   topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
   // Relationships
-  branches          Branch[]
   questionSubtopics QuestionSubtopic[]
 
   @@unique([topicId, name])
@@ -113,31 +154,6 @@ model Subtopic {
   @@index([topicId, isActive, order]) // For topic subtopics ordering
   @@index([isActive, createdAt]) // For active subtopics by date
   @@map("subtopics")
-}
-
-model Branch {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  order     Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Foreign key
-  subtopicId String
-  subtopic   Subtopic @relation(fields: [subtopicId], references: [id], onDelete: Cascade)
-
-  // Relationships
-  questionBranches   QuestionBranch[]
-  UserBranchProgress UserBranchProgress[]
-
-  @@unique([subtopicId, name])
-  // Optimized indexes
-  @@index([slug, isActive]) // Critical: for your slug+active lookups
-  @@index([subtopicId, isActive, order]) // For subtopic branches ordering
-  @@index([isActive, createdAt]) // For active branches by date
-  @@map("branches")
 }
 
 model ChatMessage {
@@ -170,24 +186,33 @@ model Question {
   o1answer     String?
   difficulty   Difficulty   @default(MEDIUM)
   questionType QuestionType @default(MULTIPLE_CHOICE)
-  isActive     Boolean      @default(true)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  isActive     Boolean      @default(false)
+  system       String? // Which body system this question covers
+  discipline   String? // Which medical discipline this question belongs to
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
   options                    Option[]
   questionTopics             QuestionTopic[]
   questionSubtopics          QuestionSubtopic[]
-  questionBranches           QuestionBranch[]
   attempts                   UserAttempt[]
   problemSetQuestions        ProblemSetQuestion[]
   ChatMessage                ChatMessage[]
   UserCustomPracticeQuestion UserCustomPracticeQuestion[]
+  QuestionTag                QuestionTag[]
+  UserQuestionState          UserQuestionState[]
+  QuestionSystem             QuestionSystem[]
+  QuestionDiscipline         QuestionDiscipline[]
 
   // Optimized indexes
   @@index([isActive, createdAt]) // Critical: for your navigation queries
   @@index([isActive, difficulty]) // For filtering by difficulty
   @@index([isActive, questionType]) // For filtering by type
+  @@index([isActive, system]) // NEW: For filtering by system
+  @@index([isActive, discipline]) // NEW: For filtering by discipline
+  @@index([system, discipline, isActive]) // NEW: For combined filtering
   @@index([createdAt]) // For ordering questions
   @@map("questions")
 }
@@ -242,23 +267,6 @@ model QuestionSubtopic {
   @@map("question_subtopics")
 }
 
-// Junction table for Question-Branch many-to-many relationship
-model QuestionBranch {
-  questionId String
-  branchId   String
-  createdAt  DateTime @default(now())
-
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-
-  @@id([questionId, branchId])
-  // Critical indexes for junction table performance
-  @@index([branchId]) // For branch -> questions lookups
-  @@index([questionId]) // For question -> branches lookups
-  @@index([branchId, createdAt]) // For ordered branch questions
-  @@map("question_branches")
-}
-
 model ProblemSet {
   id          String   @id @default(cuid())
   name        String
@@ -311,6 +319,7 @@ model UserAttempt {
   @@index([userId, attemptedAt]) // For user attempt history
   @@index([questionId, isCorrect]) // For question analytics
   @@index([userId, questionId]) // For checking if user attempted question
+  @@index([userId, isCorrect, attemptedAt]) // NEW: For user's correct/incorrect history
   @@map("user_attempts")
 }
 
@@ -387,30 +396,6 @@ model UserStepProgress {
   @@index([stepId, isCompleted]) // For step completion analytics
   @@index([userId, lastPracticedAt]) // For recent practice queries
   @@map("user_step_progress")
-}
-
-model UserBranchProgress {
-  id                 String    @id @default(cuid())
-  userId             String
-  branchId           String
-  questionsAttempted Int       @default(0)
-  questionsCorrect   Int       @default(0)
-  totalTimeSpent     Int       @default(0) // in seconds
-  lastPracticedAt    DateTime?
-  streak             Int       @default(0) // Current streak
-  bestStreak         Int       @default(0) // Best streak ever
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  // Relationships
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, branchId])
-  // Optimized indexes
-  @@index([userId, lastPracticedAt]) // For recent practice queries
-  @@index([branchId, questionsCorrect]) // For branch leaderboards
-  @@map("user_branch_progress")
 }
 
 model CustomPracticeSet {
@@ -577,4 +562,94 @@ model Verification {
   @@index([identifier, value]) // For verification lookups
   @@index([expiresAt]) // For cleanup of expired verifications
   @@map("verification")
+}
+
+// New model for tags
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  color     String? // Hex color for UI display
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  questionTags QuestionTag[]
+
+  // Optimized indexes
+  @@index([isActive, name]) // For active tags lookup
+  @@index([slug, isActive]) // For slug lookups
+  @@map("tags")
+}
+
+// Junction table for Question-Tag many-to-many relationship
+model QuestionTag {
+  questionId String
+  tagId      String
+  createdAt  DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, tagId])
+  // Critical indexes for junction table performance
+  @@index([tagId]) // For tag -> questions lookups
+  @@index([questionId]) // For question -> tags lookups
+  @@index([tagId, createdAt]) // For ordered tag questions
+  @@map("question_tags")
+}
+
+// Junction table for Question-System many-to-many relationship
+model QuestionSystem {
+  questionId String
+  system     String
+  createdAt  DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, system])
+  // Critical indexes for junction table performance
+  @@index([system]) // For system -> questions lookups
+  @@index([questionId]) // For question -> systems lookups
+  @@index([system, createdAt]) // For ordered system questions
+  @@map("question_systems")
+}
+
+// Junction table for Question-Discipline many-to-many relationship
+model QuestionDiscipline {
+  questionId String
+  discipline String
+  createdAt  DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, discipline])
+  // Critical indexes for junction table performance
+  @@index([discipline]) // For discipline -> questions lookups
+  @@index([questionId]) // For question -> disciplines lookups
+  @@index([discipline, createdAt]) // For ordered discipline questions
+  @@map("question_disciplines")
+}
+
+// New model for user-specific question states
+model UserQuestionState {
+  id         String   @id @default(cuid())
+  userId     String
+  questionId String
+  isUsed     Boolean  @default(false) // Whether user has used this question
+  isMarked   Boolean  @default(false) // Whether user has marked this question
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relationships
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  // Optimized indexes
+  @@index([userId, isUsed]) // For filtering used/unused questions
+  @@index([userId, isMarked]) // For filtering marked questions
+  @@index([questionId, isUsed]) // For question usage analytics
+  @@map("user_question_states")
 }

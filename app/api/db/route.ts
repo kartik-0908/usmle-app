@@ -4,7 +4,10 @@ export async function GET(request: Request) {
   try {
     console.log("categorizing questions ...");
     // await saveExaplanation();
-    categorizeQuestions()
+    // categorizeQuestions();
+    // await insertStepDisciplines("step2");
+    // await insertStepSystems("step2");
+    await categorizeQuestionsWithAI()
     // importQuestions();
     // await prisma.question.deleteMany()
     // await prisma.question.updateMany({
@@ -12,7 +15,7 @@ export async function GET(request: Request) {
     //     isActive: false
     //   }
     // })
-   
+
     return new Response("categorizing questions saved", {
       status: 200,
     });
@@ -21,41 +24,744 @@ export async function GET(request: Request) {
     return new Response("Error seeding topics", { status: 500 });
   }
 }
-interface SubtopicData {
-  name: string
-  order: number
-  details: string[]
+
+// Schema for AI response validation
+const categorizationSchema = z.object({
+  stepId: z
+    .string()
+    .describe("The ID of the step that this question belongs to"),
+  systems: z
+    .array(z.string())
+    .describe(
+      "Array of relevant medical systems for this question from the selected step"
+    ),
+  disciplines: z
+    .array(z.string())
+    .describe(
+      "Array of relevant medical disciplines for this question from the selected step"
+    ),
+  difficulty: z
+    .enum(["EASY", "MEDIUM", "HARD"])
+    .describe("Difficulty level of the question"),
+  reasoning: z
+    .string()
+    .describe(
+      "Brief explanation of the categorization choices including why this step was chosen"
+    ),
+});
+
+interface CategorizationResult1 {
+  stepId: string;
+  systems: string[];
+  disciplines: string[];
+  difficulty: Difficulty;
+  reasoning: string;
 }
 
-interface TopicData {
-  name: string
-  order: number
-  subtopics: SubtopicData[]
+interface StepInfo {
+  id: string;
+  name: string;
+  slug: string;
+  stepNumber: number;
+  systems: string[];
+  disciplines: string[];
 }
 
-interface StepData {
-  stepNumber: number
-  name: string
-  description: string
-  topics: TopicData[]
+/**
+ * Fetches all steps with their associated systems and disciplines
+ */
+async function getStepsWithSystemsAndDisciplines(): Promise<StepInfo[]> {
+  try {
+    const steps = await prisma.step.findMany({
+      where: { isActive: true },
+      include: {
+        StepSystem: {
+          where: { isActive: true },
+          orderBy: { order: "asc" },
+        },
+        StepDiscipline: {
+          where: { isActive: true },
+          orderBy: { order: "asc" },
+        },
+      },
+      orderBy: { stepNumber: "asc" },
+    });
+    //@ts-ignore
+    return steps.map((step) => ({
+      id: step.id,
+      name: step.name,
+      slug: step.slug,
+      stepNumber: step.stepNumber,
+      //@ts-ignore
+      systems: step.StepSystem.map((ss) => ss.system),
+      //@ts-ignore
+      disciplines: step.StepDiscipline.map((sd) => sd.discipline),
+    }));
+  } catch (error) {
+    console.error("Error fetching steps with systems and disciplines:", error);
+    throw error;
+  }
 }
 
-interface USMLEData {
-  steps: StepData[]
+/**
+ * Uses GPT-4 to categorize a question and assign it to the correct step with matching systems/disciplines
+ */
+async function categorizeQuestionWithAI(
+  questionText: string,
+  stepsInfo: StepInfo[]
+): Promise<CategorizationResult1> {
+  try {
+    // Format step information for the AI prompt
+    const stepsDescription = stepsInfo
+      .map(
+        (step) =>
+          `STEP ${step.stepNumber} - ${step.name} (ID: ${step.id}):
+  Systems: ${step.systems.join(", ") || "None"}
+  Disciplines: ${step.disciplines.join(", ") || "None"}`
+      )
+      .join("\n\n");
+
+    const prompt = `
+You are a medical education expert. Analyze the following medical question and categorize it appropriately.
+
+QUESTION TO ANALYZE:
+${questionText}
+
+AVAILABLE STEPS WITH THEIR SYSTEMS AND DISCIPLINES:
+${stepsDescription}
+
+DIFFICULTY LEVELS:
+- EASY: Basic recall, simple concepts
+- MEDIUM: Application of knowledge, moderate complexity
+- HARD: Complex analysis, multiple concepts integration
+
+IMPORTANT RULES:
+1. You MUST choose exactly ONE step that this question belongs to
+2. You can only select systems that belong to that chosen step
+3. You can only select disciplines that belong to that chosen step
+4. Do NOT mix systems from one step with disciplines from another step
+5. Be selective - only choose systems and disciplines that are directly relevant to the question content
+
+Please categorize this question by:
+1. First determining which step this question belongs to based on its content
+2. Then selecting relevant systems from that step's available systems
+3. Then selecting relevant disciplines from that step's available disciplines
+4. Assigning an appropriate difficulty level
+5. Providing reasoning for your choices, especially why you chose that specific step
+
+The stepId in your response must match one of the step IDs provided above.
+`;
+
+    // const result = await generateObject({
+    //   model: openai("gpt-4-turbo"),
+    //   schema: categorizationSchema,
+    //   prompt: prompt,
+    //   temperature: 0.3, // Lower temperature for more consistent categorization
+    // });
+    const result = await generateObject({
+      model: azure("gpt-4.1"),
+      schema: categorizationSchema,
+      prompt: prompt,
+      temperature: 0.1,
+    });
+
+    // Validate that the selected step exists
+    const selectedStep = stepsInfo.find(
+      (step) => step.id === result.object.stepId
+    );
+    if (!selectedStep) {
+      throw new Error(
+        `Invalid step ID returned by AI: ${result.object.stepId}`
+      );
+    }
+
+    // Filter to only include systems and disciplines that exist in the selected step
+    const validSystems = result.object.systems.filter((system) =>
+      selectedStep.systems.includes(system)
+    );
+
+    const validDisciplines = result.object.disciplines.filter((discipline) =>
+      selectedStep.disciplines.includes(discipline)
+    );
+
+    // Log validation warnings
+    const invalidSystems = result.object.systems.filter(
+      (system) => !selectedStep.systems.includes(system)
+    );
+    const invalidDisciplines = result.object.disciplines.filter(
+      (discipline) => !selectedStep.disciplines.includes(discipline)
+    );
+
+    if (invalidSystems.length > 0) {
+      console.warn(
+        `⚠️  AI suggested invalid systems for step ${selectedStep.name}: ${invalidSystems.join(", ")}`
+      );
+    }
+    if (invalidDisciplines.length > 0) {
+      console.warn(
+        `⚠️  AI suggested invalid disciplines for step ${selectedStep.name}: ${invalidDisciplines.join(", ")}`
+      );
+    }
+
+    return {
+      stepId: result.object.stepId,
+      systems: validSystems,
+      disciplines: validDisciplines,
+      difficulty: result.object.difficulty as Difficulty,
+      reasoning: result.object.reasoning,
+    };
+  } catch (error) {
+    console.error("Error in AI categorization:", error);
+    throw error;
+  }
 }
 
-interface InsertionResults {
-  steps: any[]
-  topics: any[]
-  subtopics: any[]
+/**
+ * Updates question with categorization data in the database
+ */
+async function updateQuestionCategorization(
+  questionId: string,
+  categorization: CategorizationResult1
+): Promise<void> {
+  try {
+    // Start a transaction to ensure data consistency
+    await prisma.$transaction(async (tx: any) => {
+      // Update the question's difficulty and direct system/discipline fields
+      await tx.question.update({
+        where: { id: questionId },
+        data: {
+          difficulty: categorization.difficulty,
+          // Update the direct system and discipline fields with the primary ones
+          system: categorization.systems[0] || null,
+          discipline: categorization.disciplines[0] || null,
+        },
+      });
+
+      // Clear existing question-system relationships
+      await tx.questionSystem.deleteMany({
+        where: { questionId },
+      });
+
+      // Clear existing question-discipline relationships
+      await tx.questionDiscipline.deleteMany({
+        where: { questionId },
+      });
+
+      // Create new question-system relationships
+      if (categorization.systems.length > 0) {
+        await tx.questionSystem.createMany({
+          data: categorization.systems.map((system) => ({
+            questionId,
+            system,
+          })),
+        });
+      }
+
+      // Create new question-discipline relationships
+      if (categorization.disciplines.length > 0) {
+        await tx.questionDiscipline.createMany({
+          data: categorization.disciplines.map((discipline) => ({
+            questionId,
+            discipline,
+          })),
+        });
+      }
+
+      // Also create/update question-topic relationships if the question belongs to topics of this step
+      // This ensures questions are properly linked to the correct step's topics
+      const stepTopics = await tx.topic.findMany({
+        where: {
+          stepId: categorization.stepId,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+
+      // Note: You might want to implement additional logic here to link questions to specific topics
+      // based on the AI's analysis or additional categorization
+    });
+
+    console.log(
+      `✅ Updated question ${questionId} with step ${categorization.stepId} categorization`
+    );
+  } catch (error) {
+    console.error(`❌ Error updating question ${questionId}:`, error);
+    throw error;
+  }
 }
 
-// Helper function to create slug from name
+/**
+ * Main function to process questions one by one and categorize them
+ */
+export async function categorizeQuestionsWithAI(
+  options: {
+    batchSize?: number;
+    startFromId?: string;
+    onlyUncategorized?: boolean;
+    delayBetweenRequests?: number;
+    specificStepId?: string; // Optional: only categorize questions for a specific step
+  } = {}
+) {
+  const {
+    batchSize = 10,
+    startFromId,
+    onlyUncategorized = true,
+    delayBetweenRequests = 1000, // 1 second delay to respect rate limits
+    specificStepId,
+  } = options;
+
+  try {
+    console.log("🔄 Starting question categorization process...");
+
+    // Get all steps with their systems and disciplines
+    const stepsInfo = await getStepsWithSystemsAndDisciplines();
+
+    if (stepsInfo.length === 0) {
+      throw new Error(
+        "No active steps found in the database. Please ensure steps table has active records."
+      );
+    }
+
+    console.log(`📊 Found ${stepsInfo.length} active steps:`);
+    stepsInfo.forEach((step) => {
+      console.log(`  Step ${step.stepNumber}: ${step.name}`);
+      console.log(
+        `    Systems (${step.systems.length}): ${step.systems.join(", ") || "None"}`
+      );
+      console.log(
+        `    Disciplines (${step.disciplines.length}): ${step.disciplines.join(", ") || "None"}`
+      );
+    });
+
+    // Filter steps if specificStepId is provided
+    let targetSteps = stepsInfo;
+    if (specificStepId) {
+      targetSteps = stepsInfo.filter((step) => step.id === specificStepId);
+      if (targetSteps.length === 0) {
+        throw new Error(
+          `Step with ID ${specificStepId} not found or not active.`
+        );
+      }
+      console.log(`🎯 Focusing on specific step: ${targetSteps[0].name}`);
+    }
+
+    // Build query conditions
+    const whereCondition: any = {
+      isActive: true,
+    };
+
+    if (onlyUncategorized) {
+      whereCondition.OR = [
+        { system: null },
+        { discipline: null },
+        { difficulty: "MEDIUM" }, // Assuming MEDIUM is default and needs recategorization
+      ];
+    }
+
+    if (startFromId) {
+      whereCondition.id = { gt: startFromId };
+    }
+
+    // Get total count for progress tracking
+    const totalQuestions = await prisma.question.count({
+      where: whereCondition,
+    });
+
+    console.log(`📋 Found ${totalQuestions} questions to process`);
+
+    let processedCount = 0;
+    let successCount = 0;
+    let errorCount = 0;
+    const stepAssignments: Record<string, number> = {};
+
+    // Process questions in batches
+    while (processedCount < totalQuestions) {
+      const questions = await prisma.question.findMany({
+        where: whereCondition,
+        select: {
+          id: true,
+          title: true,
+          questionText: true,
+          system: true,
+          discipline: true,
+          difficulty: true,
+        },
+        orderBy: { createdAt: "asc" },
+        skip: processedCount,
+        take: batchSize,
+      });
+
+      if (questions.length === 0) break;
+
+      console.log(
+        `\n🔄 Processing batch ${Math.ceil(processedCount / batchSize) + 1}...`
+      );
+
+      for (const question of questions) {
+        try {
+          console.log(`\n📝 Processing question: ${question.id}`);
+          console.log(`Title: ${question.title.substring(0, 100)}...`);
+
+          // Combine title and question text for better context
+          const fullQuestionText = `${question.title}\n\n${question.questionText}`;
+
+          // Get AI categorization
+          const categorization = await categorizeQuestionWithAI(
+            fullQuestionText,
+            stepsInfo
+          );
+
+          // Find the step name for logging
+          const assignedStep = stepsInfo.find(
+            (s) => s.id === categorization.stepId
+          );
+          const stepName = assignedStep
+            ? `${assignedStep.name} (Step ${assignedStep.stepNumber})`
+            : categorization.stepId;
+
+          console.log(`🤖 AI Categorization:`);
+          console.log(`  Assigned Step: ${stepName}`);
+          console.log(
+            `  Systems: ${categorization.systems.join(", ") || "None"}`
+          );
+          console.log(
+            `  Disciplines: ${categorization.disciplines.join(", ") || "None"}`
+          );
+          console.log(`  Difficulty: ${categorization.difficulty}`);
+          console.log(
+            `  Reasoning: ${categorization.reasoning.substring(0, 150)}...`
+          );
+
+          // Update question in database
+          await updateQuestionCategorization(question.id, categorization);
+          successCount++;
+
+          // Track step assignments for summary
+          stepAssignments[stepName] = (stepAssignments[stepName] || 0) + 1;
+
+          // Add delay between requests to respect rate limits
+          if (delayBetweenRequests > 0) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, delayBetweenRequests)
+            );
+          }
+        } catch (error) {
+          console.error(`❌ Error processing question ${question.id}:`, error);
+          errorCount++;
+        }
+
+        processedCount++;
+
+        // Progress update
+        const progress = ((processedCount / totalQuestions) * 100).toFixed(1);
+        console.log(
+          `📊 Progress: ${processedCount}/${totalQuestions} (${progress}%)`
+        );
+      }
+    }
+
+    console.log("\n✅ Categorization process completed!");
+    console.log(`📊 Summary:`);
+    console.log(`  Total processed: ${processedCount}`);
+    console.log(`  Successful: ${successCount}`);
+    console.log(`  Errors: ${errorCount}`);
+    console.log(
+      `  Success rate: ${((successCount / processedCount) * 100).toFixed(1)}%`
+    );
+
+    console.log("\n📈 Questions assigned by step:");
+    Object.entries(stepAssignments).forEach(([stepName, count]) => {
+      console.log(`  ${stepName}: ${count} questions`);
+    });
+
+    return {
+      totalProcessed: processedCount,
+      successful: successCount,
+      errors: errorCount,
+      stepAssignments,
+    };
+  } catch (error) {
+    console.error("💥 Fatal error in categorization process:", error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+/**
+ * Helper function to categorize a single question (useful for testing)
+ */
+export async function categorizeSingleQuestion(questionId: string) {
+  try {
+    const stepsInfo = await getStepsWithSystemsAndDisciplines();
+
+    const question = await prisma.question.findUnique({
+      where: { id: questionId },
+      select: {
+        id: true,
+        title: true,
+        questionText: true,
+        system: true,
+        discipline: true,
+        difficulty: true,
+      },
+    });
+
+    if (!question) {
+      throw new Error(`Question with ID ${questionId} not found`);
+    }
+
+    const fullQuestionText = `${question.title}\n\n${question.questionText}`;
+    const categorization = await categorizeQuestionWithAI(
+      fullQuestionText,
+      stepsInfo
+    );
+
+    await updateQuestionCategorization(questionId, categorization);
+
+    const assignedStep = stepsInfo.find((s) => s.id === categorization.stepId);
+
+    return {
+      questionId: question.id,
+      categorization,
+      assignedStepName: assignedStep
+        ? `${assignedStep.name} (Step ${assignedStep.stepNumber})`
+        : categorization.stepId,
+      success: true,
+    };
+  } catch (error) {
+    console.error(`Error categorizing single question ${questionId}:`, error);
+    return {
+      questionId,
+      error: error instanceof Error ? error.message : "Unknown error",
+      success: false,
+    };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+/**
+ * Helper function to validate step consistency (useful for debugging)
+ */
+export async function validateStepConsistency() {
+  try {
+    console.log("🔍 Validating step consistency...");
+
+    const inconsistentQuestions = await prisma.question.findMany({
+      where: { isActive: true },
+      include: {
+        QuestionSystem: true,
+        QuestionDiscipline: true,
+      },
+    });
+
+    const stepsInfo = await getStepsWithSystemsAndDisciplines();
+    const issues: string[] = [];
+
+    for (const question of inconsistentQuestions) {
+      //@ts-ignore
+      const systems = question.QuestionSystem.map((qs) => qs.system);
+      //@ts-ignore
+      const disciplines = question.QuestionDiscipline.map(
+        (qd) => qd.discipline
+      );
+
+      if (systems.length === 0 && disciplines.length === 0) continue;
+
+      // Find which steps contain these systems and disciplines
+      const stepsWithSystems = stepsInfo.filter((step) =>
+        //@ts-ignore
+        systems.some((system) => step.systems.includes(system))
+      );
+      const stepsWithDisciplines = stepsInfo.filter((step) =>
+        //@ts-ignore
+        disciplines.some((discipline) => step.disciplines.includes(discipline))
+      );
+
+      // Check if systems and disciplines belong to the same step
+      const commonSteps = stepsWithSystems.filter((step) =>
+        stepsWithDisciplines.some((dStep) => dStep.id === step.id)
+      );
+
+      if (
+        commonSteps.length === 0 &&
+        systems.length > 0 &&
+        disciplines.length > 0
+      ) {
+        issues.push(
+          `Question ${question.id}: Systems and disciplines belong to different steps`
+        );
+        issues.push(
+          `  Systems: ${systems.join(", ")} (Steps: ${stepsWithSystems.map((s) => s.name).join(", ")})`
+        );
+        issues.push(
+          `  Disciplines: ${disciplines.join(", ")} (Steps: ${stepsWithDisciplines.map((s) => s.name).join(", ")})`
+        );
+      }
+    }
+
+    if (issues.length > 0) {
+      console.log("⚠️  Found step consistency issues:");
+      issues.forEach((issue) => console.log(`  ${issue}`));
+    } else {
+      console.log("✅ No step consistency issues found!");
+    }
+
+    return issues;
+  } catch (error) {
+    console.error("Error validating step consistency:", error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+export async function insertStepDisciplines(stepId: string) {
+  // const disciplines = [
+  //   "Pathology",
+  //   "Physiology",
+  //   "Pharmacology",
+  //   "Anatomy",
+  //   "Microbiology",
+  //   "Embryology",
+  //   "Biochemistry",
+  //   "Genetics",
+  //   "Immunology",
+  //   "Behavioral Science",
+  // ];
+  const disciplines = [
+    "Internal Medicine",
+    "Surgery",
+    "Pediatrics",
+    "Psychiatry",
+    "Obstetrics & Gynecology",
+    "Preventive Medicine",
+    "Emergency Medicine",
+    "Ethics / Communication",
+    "Epidemiology / Biostatistics",
+  ];
+
+  try {
+    // Insert all disciplines for the step with proper ordering
+    const insertedDisciplines = await prisma.stepDiscipline.createMany({
+      data: disciplines.map((discipline, index) => ({
+        stepId,
+        discipline,
+        isActive: true,
+        order: index + 1, // Start ordering from 1
+      })),
+      skipDuplicates: true, // This will skip if discipline-step combination already exists
+    });
+
+    console.log(
+      `Successfully inserted ${insertedDisciplines.count} disciplines for step ${stepId}`
+    );
+    return insertedDisciplines;
+  } catch (error) {
+    console.error("Error inserting step disciplines:", error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+export async function insertStepSystems(stepId: string) {
+  // const systems = [
+  //   "Cardiovascular",
+  //   "Endocrine",
+  //   "Gastrointestinal",
+  //   "Hematology & Oncology",
+  //   "Musculoskeletal",
+  //   "Nervous & Special Senses",
+  //   "Renal & Urinary",
+  //   "Reproductive",
+  //   "Respiratory",
+  //   "Skin & Subcutaneous Tissue",
+  //   "Multisystem Disorders",
+  // ];
+  const systems = [
+    "Cardiovascular",
+    "Endocrine / Diabetes",
+    "Gastrointestinal",
+    "Hematology & Oncology",
+    "Infectious Diseases",
+    "Musculoskeletal / Rheumatology",
+    "Neurology",
+    "Obstetrics & Gynecology",
+    "Pediatrics",
+    "Psychiatry",
+    "Pulmonary / Critical Care",
+    "Renal / Urology",
+    "Dermatology",
+    "Emergency Medicine",
+    "Preventive Medicine",
+    "Multisystem / Miscellaneous",
+  ];
+
+  try {
+    // Insert all systems for the step with proper ordering
+    const insertedSystems = await prisma.stepSystem.createMany({
+      data: systems.map((system, index) => ({
+        stepId,
+        system,
+        isActive: true,
+        order: index + 1, // Start ordering from 1
+      })),
+      skipDuplicates: true, // This will skip if system-step combination already exists
+    });
+
+    console.log(
+      `Successfully inserted ${insertedSystems.count} systems for step ${stepId}`
+    );
+    return insertedSystems;
+  } catch (error) {
+    console.error("Error inserting step systems:", error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+/**
+ * Helper function to create slug from branch name
+ * @param name - Branch name
+ * @returns string - Slugified version of the name
+ */
 function createSlug(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+interface SubtopicData {
+  name: string;
+  order: number;
+  details: string[];
+}
+
+interface TopicData {
+  name: string;
+  order: number;
+  subtopics: SubtopicData[];
+}
+
+interface StepData {
+  stepNumber: number;
+  name: string;
+  description: string;
+  topics: TopicData[];
+}
+
+interface USMLEData {
+  steps: StepData[];
+}
+
+interface InsertionResults {
+  steps: any[];
+  topics: any[];
+  subtopics: any[];
 }
 
 const usmleData: USMLEData = {
@@ -72,44 +778,92 @@ const usmleData: USMLEData = {
             {
               name: "Biochemistry & Molecular Biology",
               order: 1,
-              details: ["DNA/RNA structure", "Transcription", "Translation", "Mutations", "Gene expression"]
+              details: [
+                "DNA/RNA structure",
+                "Transcription",
+                "Translation",
+                "Mutations",
+                "Gene expression",
+              ],
             },
             {
               name: "Cell Biology",
               order: 2,
-              details: ["Cell organelles", "Cell cycle", "Apoptosis", "Cell signaling", "Cytoskeleton"]
+              details: [
+                "Cell organelles",
+                "Cell cycle",
+                "Apoptosis",
+                "Cell signaling",
+                "Cytoskeleton",
+              ],
             },
             {
               name: "Genetics",
               order: 3,
-              details: ["Mendelian genetics", "Pedigrees", "Chromosomal abnormalities", "Genetic testing"]
+              details: [
+                "Mendelian genetics",
+                "Pedigrees",
+                "Chromosomal abnormalities",
+                "Genetic testing",
+              ],
             },
             {
               name: "Immunology",
               order: 4,
-              details: ["Innate immunity", "Adaptive immunity", "Hypersensitivity reactions", "Immune deficiencies", "Vaccines"]
+              details: [
+                "Innate immunity",
+                "Adaptive immunity",
+                "Hypersensitivity reactions",
+                "Immune deficiencies",
+                "Vaccines",
+              ],
             },
             {
               name: "Microbiology",
               order: 5,
-              details: ["Bacteriology", "Virology", "Mycology", "Parasitology", "Antimicrobials", "Resistance mechanisms"]
+              details: [
+                "Bacteriology",
+                "Virology",
+                "Mycology",
+                "Parasitology",
+                "Antimicrobials",
+                "Resistance mechanisms",
+              ],
             },
             {
               name: "Pharmacology",
               order: 6,
-              details: ["Pharmacokinetics", "Pharmacodynamics", "Drug interactions", "Side effects", "Mechanisms of action"]
+              details: [
+                "Pharmacokinetics",
+                "Pharmacodynamics",
+                "Drug interactions",
+                "Side effects",
+                "Mechanisms of action",
+              ],
             },
             {
               name: "Pathology",
               order: 7,
-              details: ["Cell injury", "Inflammation", "Neoplasia", "Tissue repair", "Hemodynamics"]
+              details: [
+                "Cell injury",
+                "Inflammation",
+                "Neoplasia",
+                "Tissue repair",
+                "Hemodynamics",
+              ],
             },
             {
               name: "Behavioral Science",
               order: 8,
-              details: ["Developmental milestones", "Psychological theories", "Ethics", "Epidemiology", "Biostatistics"]
-            }
-          ]
+              details: [
+                "Developmental milestones",
+                "Psychological theories",
+                "Ethics",
+                "Epidemiology",
+                "Biostatistics",
+              ],
+            },
+          ],
         },
         {
           name: "Organ Systems",
@@ -118,51 +872,102 @@ const usmleData: USMLEData = {
             {
               name: "Cardiovascular",
               order: 1,
-              details: ["Anatomy", "Physiology", "Cardiac cycle", "Congenital heart defects", "Pharmacology"]
+              details: [
+                "Anatomy",
+                "Physiology",
+                "Cardiac cycle",
+                "Congenital heart defects",
+                "Pharmacology",
+              ],
             },
             {
               name: "Respiratory",
               order: 2,
-              details: ["Lung anatomy", "Ventilation/perfusion", "Asthma", "COPD", "Restrictive diseases"]
+              details: [
+                "Lung anatomy",
+                "Ventilation/perfusion",
+                "Asthma",
+                "COPD",
+                "Restrictive diseases",
+              ],
             },
             {
               name: "Renal",
               order: 3,
-              details: ["Nephron function", "Acid-base balance", "Renal clearance", "Glomerular diseases"]
+              details: [
+                "Nephron function",
+                "Acid-base balance",
+                "Renal clearance",
+                "Glomerular diseases",
+              ],
             },
             {
               name: "Gastrointestinal",
               order: 4,
-              details: ["GI motility", "Digestion", "Malabsorption", "Liver pathology", "Enzymes"]
+              details: [
+                "GI motility",
+                "Digestion",
+                "Malabsorption",
+                "Liver pathology",
+                "Enzymes",
+              ],
             },
             {
               name: "Endocrine",
               order: 5,
-              details: ["Hormonal regulation", "Thyroid", "Adrenal", "Pancreas", "Endocrine pharmacology"]
+              details: [
+                "Hormonal regulation",
+                "Thyroid",
+                "Adrenal",
+                "Pancreas",
+                "Endocrine pharmacology",
+              ],
             },
             {
               name: "Reproductive",
               order: 6,
-              details: ["Embryology", "Menstrual cycle", "Pregnancy", "Contraceptives", "STDs"]
+              details: [
+                "Embryology",
+                "Menstrual cycle",
+                "Pregnancy",
+                "Contraceptives",
+                "STDs",
+              ],
             },
             {
               name: "Musculoskeletal",
               order: 7,
-              details: ["Bone structure", "Muscle contraction", "Connective tissue diseases", "Arthritis"]
+              details: [
+                "Bone structure",
+                "Muscle contraction",
+                "Connective tissue diseases",
+                "Arthritis",
+              ],
             },
             {
               name: "Nervous System",
               order: 8,
-              details: ["Neuroanatomy", "Neurotransmitters", "CNS diseases", "Seizures", "Stroke"]
+              details: [
+                "Neuroanatomy",
+                "Neurotransmitters",
+                "CNS diseases",
+                "Seizures",
+                "Stroke",
+              ],
             },
             {
               name: "Skin & Special Senses",
               order: 9,
-              details: ["Dermatology", "Eye anatomy", "Ear", "Vision and hearing physiology"]
-            }
-          ]
-        }
-      ]
+              details: [
+                "Dermatology",
+                "Eye anatomy",
+                "Ear",
+                "Vision and hearing physiology",
+              ],
+            },
+          ],
+        },
+      ],
     },
     {
       stepNumber: 2,
@@ -176,34 +981,67 @@ const usmleData: USMLEData = {
             {
               name: "Internal Medicine",
               order: 1,
-              details: ["Cardiology", "Pulmonology", "Nephrology", "Gastroenterology", "Endocrinology", "Infectious disease", "Oncology"]
+              details: [
+                "Cardiology",
+                "Pulmonology",
+                "Nephrology",
+                "Gastroenterology",
+                "Endocrinology",
+                "Infectious disease",
+                "Oncology",
+              ],
             },
             {
               name: "Surgery",
               order: 2,
-              details: ["Pre-op/post-op care", "Abdominal emergencies", "Trauma", "Surgical infections"]
+              details: [
+                "Pre-op/post-op care",
+                "Abdominal emergencies",
+                "Trauma",
+                "Surgical infections",
+              ],
             },
             {
               name: "Pediatrics",
               order: 3,
-              details: ["Developmental milestones", "Pediatric infections", "Neonatology", "Vaccines"]
+              details: [
+                "Developmental milestones",
+                "Pediatric infections",
+                "Neonatology",
+                "Vaccines",
+              ],
             },
             {
               name: "OB/GYN",
               order: 4,
-              details: ["Prenatal care", "Labor & delivery", "Contraception", "Menstrual disorders"]
+              details: [
+                "Prenatal care",
+                "Labor & delivery",
+                "Contraception",
+                "Menstrual disorders",
+              ],
             },
             {
               name: "Psychiatry",
               order: 5,
-              details: ["Mood disorders", "Psychosis", "Anxiety", "Substance use", "Suicide prevention"]
+              details: [
+                "Mood disorders",
+                "Psychosis",
+                "Anxiety",
+                "Substance use",
+                "Suicide prevention",
+              ],
             },
             {
               name: "Preventive Medicine",
               order: 6,
-              details: ["Screening guidelines", "Health maintenance", "Risk factor modification"]
-            }
-          ]
+              details: [
+                "Screening guidelines",
+                "Health maintenance",
+                "Risk factor modification",
+              ],
+            },
+          ],
         },
         {
           name: "Skills & Physician Tasks",
@@ -212,31 +1050,31 @@ const usmleData: USMLEData = {
             {
               name: "Diagnosis",
               order: 1,
-              details: []
+              details: [],
             },
             {
               name: "Management",
               order: 2,
-              details: []
+              details: [],
             },
             {
               name: "Communication",
               order: 3,
-              details: []
+              details: [],
             },
             {
               name: "Ethical Decision-Making",
               order: 4,
-              details: []
+              details: [],
             },
             {
               name: "Prognosis",
               order: 5,
-              details: []
-            }
-          ]
-        }
-      ]
+              details: [],
+            },
+          ],
+        },
+      ],
     },
     {
       stepNumber: 3,
@@ -250,29 +1088,50 @@ const usmleData: USMLEData = {
             {
               name: "Advanced Internal Medicine",
               order: 1,
-              details: ["Multisystem diseases", "Complex comorbidities", "Longitudinal care"]
+              details: [
+                "Multisystem diseases",
+                "Complex comorbidities",
+                "Longitudinal care",
+              ],
             },
             {
               name: "Emergency Medicine",
               order: 2,
-              details: ["ACLS", "Airway management", "Trauma resuscitation", "Toxicology"]
+              details: [
+                "ACLS",
+                "Airway management",
+                "Trauma resuscitation",
+                "Toxicology",
+              ],
             },
             {
               name: "OB/GYN Advanced",
               order: 3,
-              details: ["High-risk pregnancies", "Obstetric emergencies", "Chronic conditions in pregnancy"]
+              details: [
+                "High-risk pregnancies",
+                "Obstetric emergencies",
+                "Chronic conditions in pregnancy",
+              ],
             },
             {
               name: "Pediatrics Advanced",
               order: 4,
-              details: ["Chronic pediatric conditions", "Genetic syndromes", "Developmental delay"]
+              details: [
+                "Chronic pediatric conditions",
+                "Genetic syndromes",
+                "Developmental delay",
+              ],
             },
             {
               name: "Psychiatry Advanced",
               order: 5,
-              details: ["Chronic psych management", "Medication adherence", "Legal issues"]
-            }
-          ]
+              details: [
+                "Chronic psych management",
+                "Medication adherence",
+                "Legal issues",
+              ],
+            },
+          ],
         },
         {
           name: "Judgment & Case Simulation",
@@ -281,37 +1140,53 @@ const usmleData: USMLEData = {
             {
               name: "Patient Management",
               order: 1,
-              details: ["Initial workup", "Treatment planning", "Discharge decisions", "Follow-up"]
+              details: [
+                "Initial workup",
+                "Treatment planning",
+                "Discharge decisions",
+                "Follow-up",
+              ],
             },
             {
               name: "CCS Cases",
               order: 2,
-              details: ["Simulated patient care", "Time management", "Testing", "Consultation", "Therapy"]
+              details: [
+                "Simulated patient care",
+                "Time management",
+                "Testing",
+                "Consultation",
+                "Therapy",
+              ],
             },
             {
               name: "Professionalism",
               order: 3,
-              details: ["Ethical dilemmas", "Health systems", "Cost-effective care", "Quality improvement"]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
+              details: [
+                "Ethical dilemmas",
+                "Health systems",
+                "Cost-effective care",
+                "Quality improvement",
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
 
 export async function POST(request: NextRequest) {
   try {
     const results: InsertionResults = {
       steps: [],
       topics: [],
-      subtopics: []
-    }
+      subtopics: [],
+    };
 
     // Process each step
     for (const stepData of usmleData.steps) {
-      console.log(`Processing Step ${stepData.stepNumber}: ${stepData.name}`)
-      
+      console.log(`Processing Step ${stepData.stepNumber}: ${stepData.name}`);
+
       // Upsert step
       const step = await prisma.step.upsert({
         where: { stepNumber: stepData.stepNumber },
@@ -319,7 +1194,7 @@ export async function POST(request: NextRequest) {
           name: stepData.name,
           slug: createSlug(stepData.name),
           description: stepData.description,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
         create: {
           stepNumber: stepData.stepNumber,
@@ -327,104 +1202,109 @@ export async function POST(request: NextRequest) {
           slug: createSlug(stepData.name),
           description: stepData.description,
           order: stepData.stepNumber,
-          isActive: true
-        }
-      })
+          isActive: true,
+        },
+      });
 
-      results.steps.push(step)
-      console.log(`✅ Step created/updated: ${step.name}`)
+      results.steps.push(step);
+      console.log(`✅ Step created/updated: ${step.name}`);
 
       // Process topics for this step
       for (const topicData of stepData.topics) {
-        console.log(`  Processing Topic: ${topicData.name}`)
-        
+        console.log(`  Processing Topic: ${topicData.name}`);
+
         // Upsert topic
         const topic = await prisma.topic.upsert({
-          where: { 
+          where: {
             stepId_name: {
               stepId: step.id,
-              name: topicData.name
-            }
+              name: topicData.name,
+            },
           },
           update: {
             slug: createSlug(topicData.name),
             order: topicData.order,
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
           create: {
             name: topicData.name,
             slug: createSlug(topicData.name),
             order: topicData.order,
             stepId: step.id,
-            isActive: true
-          }
-        })
+            isActive: true,
+          },
+        });
 
-        results.topics.push(topic)
-        console.log(`    ✅ Topic created/updated: ${topic.name}`)
+        results.topics.push(topic);
+        console.log(`    ✅ Topic created/updated: ${topic.name}`);
 
         // Process subtopics for this topic
         if (topicData.subtopics) {
           for (const subtopicData of topicData.subtopics) {
-            console.log(`    Processing Subtopic: ${subtopicData.name}`)
-            
+            console.log(`    Processing Subtopic: ${subtopicData.name}`);
+
             // Upsert subtopic
             const subtopic = await prisma.subtopic.upsert({
               where: {
                 topicId_name: {
                   topicId: topic.id,
-                  name: subtopicData.name
-                }
+                  name: subtopicData.name,
+                },
               },
               update: {
                 slug: createSlug(subtopicData.name),
                 order: subtopicData.order,
-                updatedAt: new Date()
+                updatedAt: new Date(),
               },
               create: {
                 name: subtopicData.name,
                 slug: createSlug(subtopicData.name),
                 order: subtopicData.order,
                 topicId: topic.id,
-                isActive: true
-              }
-            })
+                isActive: true,
+              },
+            });
 
-            results.subtopics.push(subtopic)
-            console.log(`      ✅ Subtopic created/updated: ${subtopic.name}`)
+            results.subtopics.push(subtopic);
+            console.log(`      ✅ Subtopic created/updated: ${subtopic.name}`);
           }
         }
       }
     }
 
     // Summary
-    console.log(`\n🎉 Data insertion completed!`)
-    console.log(`Steps: ${results.steps.length}`)
-    console.log(`Topics: ${results.topics.length}`)
-    console.log(`Subtopics: ${results.subtopics.length}`)
+    console.log(`\n🎉 Data insertion completed!`);
+    console.log(`Steps: ${results.steps.length}`);
+    console.log(`Topics: ${results.topics.length}`);
+    console.log(`Subtopics: ${results.subtopics.length}`);
 
-    return Response.json({
-      success: true,
-      message: 'USMLE data inserted successfully',
-      summary: {
-        stepsProcessed: results.steps.length,
-        topicsProcessed: results.topics.length,
-        subtopicsProcessed: results.subtopics.length
+    return Response.json(
+      {
+        success: true,
+        message: "USMLE data inserted successfully",
+        summary: {
+          stepsProcessed: results.steps.length,
+          topicsProcessed: results.topics.length,
+          subtopicsProcessed: results.subtopics.length,
+        },
+        data: results,
       },
-      data: results
-    }, { status: 200 })
-
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('Error inserting USMLE data:', error)
-    
-    return Response.json({
-      success: false,
-      message: 'Failed to insert USMLE data',
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    }, { status: 500 })
-    
+    console.error("Error inserting USMLE data:", error);
+
+    return Response.json(
+      {
+        success: false,
+        message: "Failed to insert USMLE data",
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      },
+      { status: 500 }
+    );
   } finally {
-    await prisma.$disconnect()
+    await prisma.$disconnect();
   }
 }
 
@@ -516,15 +1396,15 @@ async function saveExaplanation() {
         question?.options || []
       );
       await prisma.question.update({
-        where:{
+        where: {
           id: question?.id || "",
         },
-        data:{
+        data: {
           explanation: explaination,
-          o1answer:"done",
-          isActive: true
-        }
-      })
+          o1answer: "done",
+          isActive: true,
+        },
+      });
       count++;
     }
   } catch (error) {}
@@ -725,18 +1605,20 @@ function getDifficulty(metaInfo: string) {
 
 async function createQuestionWithOptions(questionData: any) {
   const { question, answer, options, meta_info } = questionData;
-  
+
   return await prisma.$transaction(async (tx: any) => {
     // Check if question already exists
     const existingQuestion = await tx.question.findFirst({
       where: {
-        questionText: question
-      }
+        questionText: question,
+      },
     });
 
     // If question already exists, skip creation and return the existing question
     if (existingQuestion) {
-      console.log(`Question already exists with ID: ${existingQuestion.id}, skipping...`);
+      console.log(
+        `Question already exists with ID: ${existingQuestion.id}, skipping...`
+      );
       return existingQuestion;
     }
 
@@ -888,7 +1770,7 @@ import { generateObject, generateText } from "ai";
 import { z } from "zod";
 
 import { createAzure } from "@ai-sdk/azure";
-import { Question, Subtopic, Topic } from "@/app/generated/prisma";
+import { Difficulty, Question, Subtopic, Topic } from "@/app/generated/prisma";
 import { NextRequest } from "next/server";
 
 const azure = createAzure({
