@@ -468,8 +468,7 @@ export function LatestQuestionPracticeScreen({
           <div className="flex items-center gap-4">
             {/* Bookmark Button */}
             <Tooltip>
-              <TooltipTrigger>
-                {" "}
+              <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
