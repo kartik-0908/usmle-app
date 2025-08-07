@@ -293,7 +293,7 @@ async function updateQuestionCategorization(
 /**
  * Main function to process questions one by one and categorize them
  */
-export async function categorizeQuestionsWithAI(
+async function categorizeQuestionsWithAI(
   options: {
     batchSize?: number;
     startFromId?: string;
@@ -491,7 +491,7 @@ export async function categorizeQuestionsWithAI(
 /**
  * Helper function to categorize a single question (useful for testing)
  */
-export async function categorizeSingleQuestion(questionId: string) {
+ async function categorizeSingleQuestion(questionId: string) {
   try {
     const stepsInfo = await getStepsWithSystemsAndDisciplines();
 
@@ -541,83 +541,9 @@ export async function categorizeSingleQuestion(questionId: string) {
   }
 }
 
-/**
- * Helper function to validate step consistency (useful for debugging)
- */
-export async function validateStepConsistency() {
-  try {
-    console.log("🔍 Validating step consistency...");
 
-    const inconsistentQuestions = await prisma.question.findMany({
-      where: { isActive: true },
-      include: {
-        QuestionSystem: true,
-        QuestionDiscipline: true,
-      },
-    });
 
-    const stepsInfo = await getStepsWithSystemsAndDisciplines();
-    const issues: string[] = [];
-
-    for (const question of inconsistentQuestions) {
-      //@ts-ignore
-      const systems = question.QuestionSystem.map((qs) => qs.system);
-      //@ts-ignore
-      const disciplines = question.QuestionDiscipline.map(
-        (qd) => qd.discipline
-      );
-
-      if (systems.length === 0 && disciplines.length === 0) continue;
-
-      // Find which steps contain these systems and disciplines
-      const stepsWithSystems = stepsInfo.filter((step) =>
-        //@ts-ignore
-        systems.some((system) => step.systems.includes(system))
-      );
-      const stepsWithDisciplines = stepsInfo.filter((step) =>
-        //@ts-ignore
-        disciplines.some((discipline) => step.disciplines.includes(discipline))
-      );
-
-      // Check if systems and disciplines belong to the same step
-      const commonSteps = stepsWithSystems.filter((step) =>
-        stepsWithDisciplines.some((dStep) => dStep.id === step.id)
-      );
-
-      if (
-        commonSteps.length === 0 &&
-        systems.length > 0 &&
-        disciplines.length > 0
-      ) {
-        issues.push(
-          `Question ${question.id}: Systems and disciplines belong to different steps`
-        );
-        issues.push(
-          `  Systems: ${systems.join(", ")} (Steps: ${stepsWithSystems.map((s) => s.name).join(", ")})`
-        );
-        issues.push(
-          `  Disciplines: ${disciplines.join(", ")} (Steps: ${stepsWithDisciplines.map((s) => s.name).join(", ")})`
-        );
-      }
-    }
-
-    if (issues.length > 0) {
-      console.log("⚠️  Found step consistency issues:");
-      issues.forEach((issue) => console.log(`  ${issue}`));
-    } else {
-      console.log("✅ No step consistency issues found!");
-    }
-
-    return issues;
-  } catch (error) {
-    console.error("Error validating step consistency:", error);
-    throw error;
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-export async function insertStepDisciplines(stepId: string) {
+async function insertStepDisciplines(stepId: string) {
   // const disciplines = [
   //   "Pathology",
   //   "Physiology",
@@ -666,7 +592,7 @@ export async function insertStepDisciplines(stepId: string) {
   }
 }
 
-export async function insertStepSystems(stepId: string) {
+ async function insertStepSystems(stepId: string) {
   // const systems = [
   //   "Cardiovascular",
   //   "Endocrine",
