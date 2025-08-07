@@ -6,7 +6,7 @@ export default function CustomSidebarTrigger() {
 
   return (
     <Tooltip>
-      <TooltipTrigger>
+      <TooltipTrigger asChild>
         <SidebarTrigger className="-ml-1" />
       </TooltipTrigger>
       <TooltipContent>

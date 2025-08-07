@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Settings } from "lucide-react";
 import { usePracticeSetCreator } from "@/hooks/usePracticeSetCreator";
 import { STATUS_LABELS, DIFFICULTY_LABELS } from "@/lib/types/practice-set";
+import { PageLoader } from "./loader";
 
 const CustomPracticeSetCreator: React.FC = () => {
   const {
@@ -39,12 +40,7 @@ const CustomPracticeSetCreator: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin" />
-        <span className="ml-2">Loading filters...</span>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (
