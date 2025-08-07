@@ -111,6 +111,14 @@ export default async function Page({
     (option) => option.isCorrect
   );
   const correctAnswer = correctOption ? correctOption.text : "";
+  const ques = await prisma.userQuestionState.findUnique({
+    where: {
+      userId_questionId: {
+        userId: userId,
+        questionId: currentQuestion.question.id,
+      },
+    },
+  });
 
   // Format the question data according to practiceQuestionSchema
   const formattedQuestion = {
@@ -121,6 +129,7 @@ export default async function Page({
     correctAnswer: correctAnswer,
     explanation: currentQuestion.question.explanation || "",
     image: undefined, // Add image field if you have it in your schema
+    isMarked: ques?.isMarked || false, // Assuming isMarked is a boolean field
   };
 
   return (

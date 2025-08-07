@@ -10,6 +10,8 @@ import {
   IconGripVertical,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarRightCollapse,
+  IconBookmarkFilled,
+  IconBookmark,
 } from "@tabler/icons-react";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
@@ -22,6 +24,8 @@ import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
 import { StudyAssistantChat } from "./study-assistant-chat";
 import Link from "next/link";
+import axios from "axios";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 export const practiceQuestionSchema = z.object({
   id: z.string(), // Changed to string for cuid
@@ -30,6 +34,7 @@ export const practiceQuestionSchema = z.object({
   options: z.array(z.string()).optional(),
   correctAnswer: z.string(),
   explanation: z.string(),
+  isMarked: z.boolean(),
   image: z.string().optional(),
 });
 
@@ -65,6 +70,8 @@ export function LatestQuestionPracticeScreen({
   const [questionWidth, setQuestionWidth] = React.useState(50);
   const [isResizing, setIsResizing] = React.useState(false);
   const [isMounted, setIsMounted] = React.useState(false);
+  const [isBookmarked, setIsBookmarked] = React.useState(question.isMarked); // You'll want to get this from your data/API
+
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   // Load saved layout preference after component mounts (client-side only)
@@ -85,7 +92,10 @@ export function LatestQuestionPracticeScreen({
     if (!isMounted) return; // Don't save during initial hydration
 
     try {
-      localStorage.setItem("sg-questionPracticeWidth", questionWidth.toString());
+      localStorage.setItem(
+        "sg-questionPracticeWidth",
+        questionWidth.toString()
+      );
     } catch (error) {
       console.log("Could not save layout preference");
     }
@@ -159,6 +169,28 @@ export function LatestQuestionPracticeScreen({
   // Preset width functions
   const setPresetWidth = (width: number) => {
     setQuestionWidth(width);
+  };
+
+  const handleBookmark = async () => {
+    try {
+      // Toggle bookmark state optimistically
+      setIsBookmarked(!isBookmarked);
+
+      // Make API call to save bookmark state
+      await axios.post("/api/question/bookmark", {
+        qId: question.id,
+        bookmark: !isBookmarked, // Toggle the bookmark state
+      });
+      // await bookmarkQuestion( questionId, !isBookmarked);
+
+      // Optional: Show toast notification
+      // toast.success(isBookmarked ? 'Bookmark removed' : 'Question bookmarked');
+    } catch (error) {
+      // Revert state on error
+      setIsBookmarked(isBookmarked);
+      console.error("Failed to bookmark question:", error);
+      // toast.error('Failed to update bookmark');
+    }
   };
 
   // Function to save user attempt to database
@@ -432,8 +464,33 @@ export function LatestQuestionPracticeScreen({
             )}
           </div>
 
-          {/* Right - Timer and Layout Controls */}
+          {/* Right - Bookmark, Timer and Layout Controls */}
           <div className="flex items-center gap-4">
+            {/* Bookmark Button */}
+            <Tooltip>
+              <TooltipTrigger>
+                {" "}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBookmark}
+                  title={
+                    isBookmarked ? "Remove bookmark" : "Bookmark this question"
+                  }
+                  className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  {isBookmarked ? (
+                    <IconBookmarkFilled className="size-4 text-yellow-500" />
+                  ) : (
+                    <IconBookmark className="size-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Bookmark</p>
+              </TooltipContent>
+            </Tooltip>
+
             {/* Layout preset buttons - Hidden on mobile */}
             <div className="hidden md:flex items-center gap-1 ml-4">
               <Button
