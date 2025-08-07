@@ -59,7 +59,7 @@ export default function SignInPage() {
       // Replace with your actual magic link API call
       const { data, error } = await authClient.signIn.magicLink({
         email: signInData.email,
-        callbackURL: "/dashboard/practice",
+        callbackURL: "/dashboard/home",
         newUserCallbackURL: "/profile",
       });
       console.log("Magic link sent:", data);
