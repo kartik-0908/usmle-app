@@ -61,7 +61,8 @@ export async function POST(request: NextRequest) {
         data: {
           userId: validatedData.userId,
           questionId: validatedData.questionId,
-          isMarked: false, // Default value, can be updated later
+          isCorrect: validatedData.isCorrect, // Store the correctness of the attempt
+          isUsed: true, // Mark as used since the user attempted it
         },
       });
     } else {
@@ -74,17 +75,10 @@ export async function POST(request: NextRequest) {
         },
         data: {
           isUsed: true, // Keep the existing state
+          isCorrect: validatedData.isCorrect, // Update correctness
         },
       });
     }
-
-    // Optionally update user progress statistics
-    await updateUserProgress(
-      validatedData.userId,
-      validatedData.questionId,
-      validatedData.isCorrect,
-      validatedData.timeSpent
-    );
 
     return NextResponse.json({
       success: true,
@@ -113,28 +107,6 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
-  }
-}
-
-// Function to update user progress statistics
-async function updateUserProgress(
-  userId: string,
-  questionId: string,
-  isCorrect: boolean,
-  timeSpent: number
-) {
-  try {
-    // Get question with its topic and step relationships
-    const question = await prisma.question.findUnique({
-      where: { id: questionId },
-    });
-
-    if (!question) return;
-
-    // Update progress for each topic this question belongs to
-  } catch (error) {
-    console.error("Error updating user progress:", error);
-    // Don't throw here as the main attempt was already saved
   }
 }
 

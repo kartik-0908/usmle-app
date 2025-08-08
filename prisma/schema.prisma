@@ -507,6 +507,7 @@ model UserQuestionState {
   questionId String
   isUsed     Boolean  @default(false) // Whether user has used this question
   isMarked   Boolean  @default(false) // Whether user has marked this question
+  isCorrect  Boolean? // Whether user answered this question correctly
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

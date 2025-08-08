@@ -1130,7 +1130,7 @@ In an acute MI patient who develops hypotension and shock signs after initial tr
 
   try {
     const result = await generateText({
-      model: azure("o1"),
+      model: azure_gpt5("gpt-5-chat"),
       prompt: prompt,
     });
 
