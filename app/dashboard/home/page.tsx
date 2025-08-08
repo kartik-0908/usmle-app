@@ -42,7 +42,7 @@ export default async function Practice() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
-              <Link href="/dashboard/practice-create" className="block w-full">
+              <Link href="/dashboard/practice" className="block w-full">
                 <Button className="w-full" size="lg">
                   Create New Set
                 </Button>

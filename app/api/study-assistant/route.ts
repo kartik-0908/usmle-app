@@ -1,7 +1,7 @@
 // app/api/study-assistant/route.ts
 
 import { auth } from "@/app/lib/auth";
-import { azure } from "@/lib/ai/azure";
+import { azure, azure_gpt5 } from "@/lib/ai/azure";
 import prisma from "@/lib/db";
 import { streamText } from "ai";
 import { headers } from "next/headers";
@@ -254,7 +254,7 @@ Always include 3-4 relevant quick replies that help continue the learning conver
 
     // Generate AI response using your existing logic
     const result = await streamText({
-      model: azure("gpt-4.1"),
+      model: azure_gpt5("gpt-5-chat"),
       system: systemPrompt,
       messages,
       temperature: 0.7,

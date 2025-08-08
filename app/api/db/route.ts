@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     // categorizeQuestions();
     // await insertStepDisciplines("0b40bcf0-fd3e-4002-9979-9d3063653223");
     // await insertStepSystems("0b40bcf0-fd3e-4002-9979-9d3063653223");
-    await categorizeQuestionsWithAI()
+    await categorizeQuestionsWithAI();
     // importQuestions();
     // await prisma.question.deleteMany()
     // await prisma.question.updateMany({
@@ -102,10 +102,6 @@ async function getStepsWithSystemsAndDisciplines(): Promise<StepInfo[]> {
     throw error;
   }
 }
-
-/**
- * Uses GPT-4 to categorize a question and assign it to the correct step with matching systems/disciplines
- */
 async function categorizeQuestionWithAI(
   questionText: string,
   stepsInfo: StepInfo[]
@@ -159,7 +155,7 @@ The stepId in your response must match one of the step IDs provided above.
     //   temperature: 0.3, // Lower temperature for more consistent categorization
     // });
     const result = await generateObject({
-      model: azure("gpt-4.1"),
+      model: azure_gpt5("gpt-5-chat"),
       schema: categorizationSchema,
       prompt: prompt,
       temperature: 0.1,
@@ -225,7 +221,7 @@ async function updateQuestionCategorization(
 ): Promise<void> {
   try {
     // Start a transaction to ensure data consistency
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx) => {
       // Update the question's difficulty and direct system/discipline fields
       await tx.question.update({
         where: { id: questionId },
@@ -266,19 +262,6 @@ async function updateQuestionCategorization(
           })),
         });
       }
-
-      // Also create/update question-topic relationships if the question belongs to topics of this step
-      // This ensures questions are properly linked to the correct step's topics
-      // const stepTopics = await tx.topic.findMany({
-      //   where: {
-      //     stepId: categorization.stepId,
-      //     isActive: true,
-      //   },
-      //   select: { id: true },
-      // });
-
-      // Note: You might want to implement additional logic here to link questions to specific topics
-      // based on the AI's analysis or additional categorization
     });
 
     console.log(
@@ -306,7 +289,7 @@ async function categorizeQuestionsWithAI(
     batchSize = 10,
     startFromId,
     onlyUncategorized = true,
-    delayBetweenRequests = 200, // 1 second delay to respect rate limits
+    delayBetweenRequests = 200, //ms
     specificStepId,
   } = options;
 
@@ -345,26 +328,12 @@ async function categorizeQuestionsWithAI(
       console.log(`🎯 Focusing on specific step: ${targetSteps[0].name}`);
     }
 
-    // Build query conditions
-    const whereCondition: any = {
-      isActive: true,
-    };
-
-    if (onlyUncategorized) {
-      whereCondition.OR = [
-        { system: null },
-        { discipline: null },
-        { difficulty: "MEDIUM" }, // Assuming MEDIUM is default and needs recategorization
-      ];
-    }
-
-    if (startFromId) {
-      whereCondition.id = { gt: startFromId };
-    }
-
     // Get total count for progress tracking
     const totalQuestions = await prisma.question.count({
-      where: whereCondition,
+      where: {
+        system: null,
+        discipline: null,
+      },
     });
 
     console.log(`📋 Found ${totalQuestions} questions to process`);
@@ -377,7 +346,10 @@ async function categorizeQuestionsWithAI(
     // Process questions in batches
     while (processedCount < totalQuestions) {
       const questions = await prisma.question.findMany({
-        where: whereCondition,
+        where: {
+          system: null,
+          discipline: null,
+        },
         select: {
           id: true,
           title: true,
@@ -491,7 +463,7 @@ async function categorizeQuestionsWithAI(
 /**
  * Helper function to categorize a single question (useful for testing)
  */
- async function categorizeSingleQuestion(questionId: string) {
+async function categorizeSingleQuestion(questionId: string) {
   try {
     const stepsInfo = await getStepsWithSystemsAndDisciplines();
 
@@ -540,8 +512,6 @@ async function categorizeQuestionsWithAI(
     await prisma.$disconnect();
   }
 }
-
-
 
 async function insertStepDisciplines(stepId: string) {
   const disciplines = [
@@ -592,7 +562,7 @@ async function insertStepDisciplines(stepId: string) {
   }
 }
 
- async function insertStepSystems(stepId: string) {
+async function insertStepSystems(stepId: string) {
   const systems = [
     "Cardiovascular",
     "Endocrine",
@@ -1203,7 +1173,6 @@ async function saveExaplanation() {
   } catch (error) {}
 }
 
-
 const fs = require("fs");
 const { createInterface } = require("readline");
 
@@ -1408,7 +1377,7 @@ import { z } from "zod";
 
 import { createAzure } from "@ai-sdk/azure";
 import { Difficulty } from "@/app/generated/prisma";
-
+import { azure_gpt5 } from "@/lib/ai/azure";
 
 const azure = createAzure({
   resourceName: "makai-azurespon", // Azure resource name
