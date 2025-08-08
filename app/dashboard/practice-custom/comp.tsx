@@ -116,22 +116,6 @@ export default function CustomPracticeSetsPage({
   const [practiceSetToDelete, setPracticeSetToDelete] =
     useState<CustomPracticeSet | null>(null);
 
-  const handleInputChange = (
-    field: keyof CreatePracticeSetForm,
-    value: string | number
-  ) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleTopicToggle = (topicId: string, checked: boolean) => {
-    setForm((prev) => ({
-      ...prev,
-      selectedTopics: checked
-        ? [...prev.selectedTopics, topicId]
-        : prev.selectedTopics.filter((id) => id !== topicId),
-    }));
-  };
-
   const handleStartPractice = async (practiceSetId: string) => {
     // Navigate to practice session or handle start logic
     window.location.href = `/dashboard/question/${practiceSetId}`;

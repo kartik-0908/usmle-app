@@ -25,21 +25,21 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { authClient } from "@/app/lib/auth-client";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export function NavUser() {
+  const router = useRouter();
   const {
     data: session,
     isPending, //loading state
   } = authClient.useSession();
   const { isMobile } = useSidebar();
-  const router = useRouter()
+
   if (isPending) {
     return null;
   }
-  if(!session){
-    redirect('/sign-in')
-    
+  if (!session) {
+    router.replace("/sign-in");
   }
   const user = {
     name: session?.user?.name || "User",
@@ -48,13 +48,17 @@ export function NavUser() {
 
   const handleSignout = async () => {
     try {
-      await authClient.signOut({
+      const res = await authClient.signOut({
         fetchOptions: {
           onSuccess: () => {
-            router.push("/sign-in"); // redirect to login page
+            console.log("Sign out successful inside route");
+            window.location.href = "/sign-in";
+            // router.push("/sign-in"); // redirect to login page
           },
         },
       });
+      console.log("Sign out successful:", res);
+      // window.location.href('/sign-in'); // redirect to login page
     } catch (error) {
       console.error("Sign out failed:", error);
     }
