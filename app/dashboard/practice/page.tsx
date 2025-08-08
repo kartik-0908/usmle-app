@@ -18,12 +18,12 @@ export default async function Page() {
       slug: "step1",
       description: "Foundational medical sciences and organ systems",
     },
-    // {
-    //   id: "a12bc377-b97c-4a62-9f74-a86cc82fdcf7",
-    //   name: "Step-2",
-    //   slug: "step2",
-    //   description: "Clinical medicine and physician skills",
-    // },
+    {
+      id: "a12bc377-b97c-4a62-9f74-a86cc82fdcf7",
+      name: "Step-2",
+      slug: "step2",
+      description: "Clinical medicine and physician skills",
+    },
   ];
 
   if (!data) {
