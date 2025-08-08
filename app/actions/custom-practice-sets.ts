@@ -1,4 +1,5 @@
 import prisma from "@/lib/db";
+import { PracticeSetStatus } from "../generated/prisma";
 
 export interface CreateCustomPracticeSetInput {
   name: string;
@@ -8,146 +9,98 @@ export interface CreateCustomPracticeSetInput {
   userId: string;
 }
 
-export async function getUserCustomPracticeSets(userId: string) {
-  const practiceSets = await prisma.customPracticeSet.findMany({
+export async function getCounts(questions: { id: string }[], userId: string) {
+  // Get states for all question IDs in one go
+  const states = await prisma.userQuestionState.findMany({
     where: {
       userId,
-      isActive: true,
+      questionId: { in: questions.map((q) => q.id) },
     },
-    include: {
-      userPracticeSets: {
-        where: {
-          userId,
-        },
-        orderBy: {
-          updatedAt: 'desc',
-        },
-        take: 1,
-      },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
+    select: { isUsed: true, isCorrect: true },
   });
 
-  return practiceSets.map((set) => ({
-    id: set.id,
-    name: set.name,
-    description: set.description,
-    totalQuestions: set.totalQuestions,
-    status: set.userPracticeSets[0]?.status || 'NOT_STARTED',
-    createdAt: set.createdAt,
-    lastAttempted: set.userPracticeSets[0]?.updatedAt || null,
-    bestScore: set.userPracticeSets[0]?.score || null,
-    attempts: set.userPracticeSets.length,
-  }));
+  let attemptedCount = 0;
+  let correctCount = 0;
+
+  for (const s of states) {
+    if (s.isUsed) {
+      attemptedCount++;
+      if (s.isCorrect) correctCount++;
+    }
+  }
+
+  return { attemptedCount, correctCount };
 }
 
-// export async function createCustomPracticeSet(input: CreateCustomPracticeSetInput) {
-//   const { name, description, totalQuestions, selectedTopics, userId } = input;
+async function getSetLastAttempt(questions: { id: string }[], userId: string) {
+  const lastAttempt = await prisma.userQuestionState.findFirst({
+    where: {
+      userId,
+      questionId: { in: questions.map((q) => q.id) },
+      isUsed: true,
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { updatedAt: true },
+  });
 
-//   // Create the practice set with topics and generate questions in a transaction
-//   const practiceSet = await prisma.$transaction(async (tx) => {
-//     // Create the custom practice set
-//     const newSet = await tx.customPracticeSet.create({
-//       data: {
-//         name,
-//         description,
-//         totalQuestions,
-//         userId,
-//       },
-//     });
+  return lastAttempt ? lastAttempt.updatedAt : null;
+}
 
+export async function getUserCustomPracticeSets(userId: string) {
+  const practiceSets = await prisma.userCustomPracticeSet.findMany({
+    where: {
+      userId,
+      // isActive: true,
+    },
+    select: {
+      id: true,
+      customPracticeSet: true,
+      generatedQuestions: {
+        select: {
+          question: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy:{
+      updatedAt: "desc",
+    }
+  });
 
-//     // Generate random questions from selected topics
-//     const generatedQuestions = await generateRandomQuestions(tx, selectedTopics, totalQuestions);
-    
-//     if (generatedQuestions.length === 0) {
-//       throw new Error('No questions found for the selected topics');
-//     }
+  let data = [];
 
-//     // Create initial user practice set with generated questions
-//     const userPracticeSet = await tx.userCustomPracticeSet.create({
-//       data: {
-//         userId,
-//         customPracticeSetId: newSet.id,
-//         status: 'NOT_STARTED',
-//       },
-//     });
+  for (const set of practiceSets) {
+    if (set) {
+      const { attemptedCount, correctCount } = await getCounts(
+        set.generatedQuestions.map((gq) => gq.question),
+        userId
+      );
 
-//     // Store the generated questions for this practice set
-//     await tx.userCustomPracticeQuestion.createMany({
-//       data: generatedQuestions.map((question: any, index: any) => ({
-//         userCustomPracticeSetId: userPracticeSet.id,
-//         questionId: question.id,
-//         order: index + 1,
-//       })),
-//     });
+      const lastAttempted = await getSetLastAttempt(
+        set.generatedQuestions.map((gq) => gq.question),
+        userId
+      );
 
+      data.push({
+        id: set.customPracticeSet.id,
+        name: set.customPracticeSet.name,
+        totalQuestions: set.customPracticeSet.totalQuestions,
+        status:
+          attemptedCount > 0
+            ? "IN_PROGRESS"
+            : ("NOT_STARTED" as PracticeSetStatus),
+        createdAt: set.customPracticeSet.createdAt,
+        lastAttempted: lastAttempted,
+        bestScore: correctCount,
+      });
+    }
+  }
 
-//   },{
-//     timeout: 30000, // 10 seconds timeout for the transaction
-//   });
-
-//   if (!practiceSet) {
-//     throw new Error('Failed to create practice set');
-//   }
-
-//   return {
-//     id: practiceSet.id,
-//     name: practiceSet.name,
-//     description: practiceSet.description,
-//     totalQuestions: practiceSet.totalQuestions,
-//     topicCount: practiceSet.topics.length,
-//     topics: practiceSet.topics.map((t) => t.topic.name),
-//     status: 'NOT_STARTED' as const,
-//     createdAt: practiceSet.createdAt,
-//     lastAttempted: null,
-//     bestScore: null,
-//     attempts: 0,
-//   };
-// }
-
-// Helper function to generate random questions from selected topics
-// async function generateRandomQuestions(
-//   tx: any, // Prisma transaction client
-//   topicIds: string[],
-//   totalQuestions: number
-// ) {
-//   // Get all active questions from the selected topics
-//   const availableQuestions = await tx.question.findMany({
-//     where: {
-//       isActive: true,
-//       questionTopics: {
-//         some: {
-//           topicId: {
-//             in: topicIds,
-//           },
-//         },
-//       },
-//     },
-//     include: {
-//       questionTopics: {
-//         include: {
-//           topic: true,
-//         },
-//       },
-//     },
-//   });
-
-//   if (availableQuestions.length === 0) {
-//     return [];
-//   }
-
-//   // If we have fewer questions than requested, return all available
-//   if (availableQuestions.length <= totalQuestions) {
-//     return availableQuestions;
-//   }
-
-//   // Shuffle and select random questions
-//   const shuffled = availableQuestions.sort(() => 0.5 - Math.random());
-//   return shuffled.slice(0, totalQuestions);
-// }
+  return data;
+}
 
 export async function deleteCustomPracticeSet(practiceSetId: string) {
   await prisma.$transaction(async (tx) => {
@@ -166,7 +119,7 @@ export async function deleteCustomPracticeSet(practiceSetId: string) {
       await tx.userCustomPracticeQuestion.deleteMany({
         where: {
           userCustomPracticeSetId: {
-            in: userPracticeSets.map(ups => ups.id),
+            in: userPracticeSets.map((ups) => ups.id),
           },
         },
       });

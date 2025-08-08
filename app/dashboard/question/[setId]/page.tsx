@@ -3,32 +3,8 @@ import prisma from "@/lib/db";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import PracticeSetClient from "./comp";
+import { getCounts } from "@/app/actions/custom-practice-sets";
 
-async function getCounts(
-  questions: { id: string }[],
-  userId: string
-) {
-  // Get states for all question IDs in one go
-  const states = await prisma.userQuestionState.findMany({
-    where: {
-      userId,
-      questionId: { in: questions.map(q => q.id) },
-    },
-    select: { isUsed: true, isCorrect: true },
-  });
-
-  let attemptedCount = 0;
-  let correctCount = 0;
-
-  for (const s of states) {
-    if (s.isUsed) {
-      attemptedCount++;
-      if (s.isCorrect) correctCount++;
-    }
-  }
-
-  return { attemptedCount, correctCount };
-}
 
 
 export default async function Page({
@@ -144,7 +120,6 @@ export default async function Page({
         questionsCorrect: correctCount,
       }}
       questions={questions}
-      userId={userId}
     />
   );
 }

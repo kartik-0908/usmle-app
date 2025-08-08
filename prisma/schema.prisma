@@ -25,7 +25,6 @@ model User {
 
   // User's attempts and progress
   attempts              UserAttempt[]
-  problemSets           UserProblemSet[]
   name                  String
   emailVerified         Boolean
   image                 String?
@@ -142,7 +141,6 @@ model Question {
   // Relationships
   options                    Option[]
   attempts                   UserAttempt[]
-  problemSetQuestions        ProblemSetQuestion[]
   ChatMessage                ChatMessage[]
   UserCustomPracticeQuestion UserCustomPracticeQuestion[]
   QuestionTag                QuestionTag[]
@@ -176,40 +174,6 @@ model Option {
   @@map("options")
 }
 
-model ProblemSet {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relationships
-  questions       ProblemSetQuestion[]
-  userProblemSets UserProblemSet[]
-
-  // Optimized indexes
-  @@index([isActive, createdAt]) // For active problem sets
-  @@map("problem_sets")
-}
-
-// Junction table for ProblemSet-Question many-to-many relationship
-model ProblemSetQuestion {
-  problemSetId String
-  questionId   String
-  order        Int      @default(0)
-  createdAt    DateTime @default(now())
-
-  problemSet ProblemSet @relation(fields: [problemSetId], references: [id], onDelete: Cascade)
-  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-  @@id([problemSetId, questionId])
-  // Optimized indexes
-  @@index([problemSetId, order]) // For ordered problem set questions
-  @@index([questionId]) // For question lookups
-  @@map("problem_set_questions")
-}
-
 model UserAttempt {
   id              String   @id @default(cuid())
   selectedOptions String[] // Array of selected option IDs
@@ -230,30 +194,6 @@ model UserAttempt {
   @@index([userId, questionId]) // For checking if user attempted question
   @@index([userId, isCorrect, attemptedAt]) // NEW: For user's correct/incorrect history
   @@map("user_attempts")
-}
-
-model UserProblemSet {
-  id             String           @id @default(cuid())
-  status         ProblemSetStatus @default(NOT_STARTED)
-  score          Int? // Score out of total questions
-  totalQuestions Int?
-  startedAt      DateTime?
-  completedAt    DateTime?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-
-  // Foreign keys
-  userId       String
-  problemSetId String
-
-  problemSet ProblemSet @relation(fields: [problemSetId], references: [id], onDelete: Cascade)
-  User       User       @relation(fields: [userId], references: [id])
-
-  @@unique([userId, problemSetId])
-  // Optimized indexes
-  @@index([userId, status]) // For user progress queries
-  @@index([problemSetId, status]) // For problem set analytics
-  @@map("user_problem_sets")
 }
 
 model UserStepProgress {
@@ -309,8 +249,6 @@ model UserCustomPracticeSet {
   id                 String            @id @default(cuid())
   status             PracticeSetStatus @default(NOT_STARTED)
   score              Int? // Score out of total questions attempted
-  questionsAttempted Int               @default(0)
-  questionsCorrect   Int               @default(0)
   startedAt          DateTime?
   completedAt        DateTime?
   createdAt          DateTime          @default(now())

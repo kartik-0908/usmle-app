@@ -28,30 +28,19 @@ import {
   BookOpen,
 } from "lucide-react";
 import Link from "next/link";
+import { PracticeSetStatus } from "@/app/generated/prisma";
 
 // Types
-type PracticeSetStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "PAUSED";
-
-interface Topic {
-  id: string;
-  name: string;
-  slug: string;
-  stepId: string;
-  isActive: boolean;
-}
 
 interface CustomPracticeSet {
   id: string;
   name: string;
   description?: string | null;
   totalQuestions: number;
-  // topicCount: number;
-  // topics: string[];
-  status: PracticeSetStatus;
   createdAt: Date;
   lastAttempted: Date | null;
   bestScore: number | null;
-  attempts: number;
+  status: PracticeSetStatus;
 }
 
 interface StatusBadgeConfig {
@@ -124,7 +113,8 @@ export default function CustomPracticeSetsPage({
     selectedTopics: [],
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [practiceSetToDelete, setPracticeSetToDelete] = useState<CustomPracticeSet | null>(null);
+  const [practiceSetToDelete, setPracticeSetToDelete] =
+    useState<CustomPracticeSet | null>(null);
 
   const handleInputChange = (
     field: keyof CreatePracticeSetForm,
@@ -202,7 +192,7 @@ export default function CustomPracticeSetsPage({
             <p className="text-muted-foreground mb-6">
               Create your first custom practice set to get started
             </p>
-            <Link href={'/dashboard/practice'}>
+            <Link href={"/dashboard/practice"}>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Your First Set
@@ -218,9 +208,6 @@ export default function CustomPracticeSetsPage({
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
                   Name
                 </th>
-                {/* <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                  Topics
-                </th> */}
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
                   Questions
                 </th>
@@ -261,24 +248,6 @@ export default function CustomPracticeSetsPage({
                         )}
                       </div>
                     </td>
-                    {/* <td className="p-4 align-middle">
-                      <div className="flex flex-wrap gap-1">
-                        {practiceSet.topics.slice(0, 2).map((topic, index) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {topic}
-                          </Badge>
-                        ))}
-                        {practiceSet.topics.length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{practiceSet.topics.length - 2} more
-                          </Badge>
-                        )}
-                      </div>
-                    </td> */}
                     <td className="p-4 align-middle font-medium">
                       {practiceSet.totalQuestions}
                     </td>
@@ -353,7 +322,9 @@ export default function CustomPracticeSetsPage({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Practice Set</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{practiceSetToDelete?.name}"? This action cannot be undone and will permanently remove the practice set and all associated data.
+              Are you sure you want to delete "{practiceSetToDelete?.name}"?
+              This action cannot be undone and will permanently remove the
+              practice set and all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

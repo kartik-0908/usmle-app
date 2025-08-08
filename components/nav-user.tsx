@@ -31,8 +31,6 @@ export function NavUser() {
   const {
     data: session,
     isPending, //loading state
-    error, //error object
-    refetch, //refetch the session
   } = authClient.useSession();
   const { isMobile } = useSidebar();
   const router = useRouter()
