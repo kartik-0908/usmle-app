@@ -26,6 +26,7 @@ import { StudyAssistantChat } from "./study-assistant-chat";
 import Link from "next/link";
 import axios from "axios";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { mutate } from "swr";
 
 export const practiceQuestionSchema = z.object({
   id: z.string(), // Changed to string for cuid
@@ -213,6 +214,7 @@ export function LatestQuestionPracticeScreen({
           timeSpent,
         }),
       });
+      mutate(`/api/user/question/state/${question.id}`);
 
       if (!response.ok) {
         throw new Error("Failed to save attempt");

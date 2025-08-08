@@ -19,6 +19,7 @@ import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import RealtimeVoiceAgent from "./voice";
 import { authClient } from "@/app/lib/auth-client";
+import { PageLoader } from "./loader";
 
 // Question schema for context
 export const practiceQuestionSchema = z.object({
@@ -175,7 +176,6 @@ export function StudyAssistantChat({
     data: session,
     isPending, //loading state
   } = authClient.useSession();
- 
 
   // Load voice mode preference from cookie on component mount
   React.useEffect(() => {
@@ -305,23 +305,13 @@ export function StudyAssistantChat({
       content: reply,
     });
   };
-
-   if (isPending) {
-    return null;
-  }
-
   // CHANGE THIS CONDITION - Don't render until we've loaded both cookie preference and chat history
   if (!isInitialized || isLoadingHistory) {
-    return (
-      <Card className={`h-[600px] flex flex-col ${className}`}>
-        <CardContent className="flex-1 flex items-center justify-center">
-          <div className="text-center text-muted-foreground">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-            <p>{isLoadingHistory ? "Loading chat history..." : "Loading..."}</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <PageLoader />;
+  }
+
+  if (isPending) {
+    return <PageLoader />;
   }
 
   const userId = session?.user.id;
