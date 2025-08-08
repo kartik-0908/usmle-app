@@ -1,3 +1,5 @@
+import { generateDefaultPracticeSetName } from "../utils";
+
 // lib/types/practice-set.ts
 export interface FilterCounts {
   systems: Record<string, number>;
@@ -63,7 +65,7 @@ export const INITIAL_FILTERS: CreatePracticeSetFilters = {
 };
 
 export const INITIAL_FORM: PracticeSetForm = {
-  name: '',
+  name: generateDefaultPracticeSetName(),
   description: '',
   maxQuestions: 20,
   filters: INITIAL_FILTERS,

@@ -25,10 +25,7 @@ export const QuestionNavigationButton: React.FC<
 
   activeBtnRef,
 }) => {
-  const { data, isLoading } = useSWR(
-    `/api/user/question/state/${id}`,
-    fetcher
-  );
+  const { data, isLoading } = useSWR(`/api/user/question/state/${id}`, fetcher);
 
   if (isLoading) {
     return null;
@@ -46,7 +43,7 @@ export const QuestionNavigationButton: React.FC<
   };
 
   const getButtonClassName = () => {
-    const baseClasses = "relative"; // relative for absolute positioning of bookmark
+    const baseClasses = "relative min-w-8 justify-center"; // <- add min width & centering
 
     if (isActive) {
       return cn(baseClasses, "pointer-events-none");
