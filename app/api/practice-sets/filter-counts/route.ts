@@ -6,7 +6,7 @@ import prisma from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('insdie filter-counts get route')
+    console.log("insdie filter-counts get route");
     const session = await auth.api.getSession({
       headers: await headers(), // you need to pass the headers object.
     });
@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const systemsParam = searchParams.get("systems");
     const disciplinesParam = searchParams.get("disciplines");
+    const stepNumber = parseInt(searchParams.get("step") || "1");
 
     const selectedSystems = systemsParam ? systemsParam.split(",") : [];
     const selectedDisciplines = disciplinesParam
@@ -21,23 +22,23 @@ export async function GET(request: NextRequest) {
       : [];
 
     // Get Step 1 data
-    const step1 = await prisma.step.findUnique({
-      where: { stepNumber: 1, isActive: true },
+    const step = await prisma.step.findUnique({
+      where: { stepNumber: stepNumber, isActive: true },
     });
 
-    if (!step1) {
+    if (!step) {
       return NextResponse.json({ error: "Step 1 not found" }, { status: 404 });
     }
 
     // Get all available systems and disciplines for Step 1
     const [availableSystems, availableDisciplines] = await Promise.all([
       prisma.stepSystem.findMany({
-        where: { stepId: step1.id, isActive: true },
+        where: { stepId: step.id, isActive: true },
         select: { system: true },
         orderBy: { order: "asc" },
       }),
       prisma.stepDiscipline.findMany({
-        where: { stepId: step1.id, isActive: true },
+        where: { stepId: step.id, isActive: true },
         select: { discipline: true },
         orderBy: { order: "asc" },
       }),

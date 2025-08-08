@@ -11,7 +11,7 @@ import {
   INITIAL_FORM,
 } from "@/lib/types/practice-set";
 
-export const usePracticeSetCreator = () => {
+export const usePracticeSetCreator = (step?: number) => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [updatingCounts, setUpdatingCounts] = useState(false);
@@ -59,6 +59,8 @@ export const usePracticeSetCreator = () => {
           params.append("disciplines", selectedDisciplines.join(","));
         }
 
+        if (typeof step !== "undefined") params.append("step", String(step)); // ← add this
+
         const response = await fetch(
           `/api/practice-sets/filter-counts?${params.toString()}`
         );
@@ -89,7 +91,7 @@ export const usePracticeSetCreator = () => {
         const response = await fetch("/api/practice-sets/filtered-count", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(filters),
+          body: JSON.stringify({ ...filters, step }),
         });
 
         if (!response.ok) throw new Error("Failed to get filtered count");
@@ -235,7 +237,7 @@ export const usePracticeSetCreator = () => {
       const response = await fetch("/api/practice-sets/custom", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, step }),
       });
 
       if (!response.ok) {

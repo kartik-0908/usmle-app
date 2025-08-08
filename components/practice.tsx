@@ -13,7 +13,7 @@ import { usePracticeSetCreator } from "@/hooks/usePracticeSetCreator";
 import { STATUS_LABELS, DIFFICULTY_LABELS } from "@/lib/types/practice-set";
 import { PageLoader } from "./loader";
 
-const CustomPracticeSetCreator: React.FC = () => {
+const CustomPracticeSetCreator = ({ step }: { step: number }) => {
   const {
     loading,
     creating,
@@ -28,7 +28,7 @@ const CustomPracticeSetCreator: React.FC = () => {
     toggleStatusFilter,
     resetForm,
     createPracticeSet,
-  } = usePracticeSetCreator();
+  } = usePracticeSetCreator(step);
 
   const handleCreateAndNavigate = async () => {
     const result = await createPracticeSet();
@@ -49,7 +49,7 @@ const CustomPracticeSetCreator: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {/* <Plus className="h-5 w-5" /> */}
-            Create Practice Set for Step 1
+            Create Practice Set for Step {step}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">

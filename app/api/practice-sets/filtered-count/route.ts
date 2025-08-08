@@ -14,6 +14,7 @@ interface FilterRequest {
   includeIncorrect: boolean;
   includeMarked: boolean;
   difficulties: Difficulty[];
+  step: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -24,14 +25,15 @@ export async function POST(request: NextRequest) {
     });
     const userId = session?.user?.id || "";
     const filters: FilterRequest = await request.json();
+    const stepNumber = parseInt(filters.step || "1");
     console.log("inside filtered count post route filters:", filters);
 
     // Get Step 1 data
-    const step1 = await prisma.step.findUnique({
-      where: { stepNumber: 1, isActive: true },
+    const step = await prisma.step.findUnique({
+      where: { stepNumber: stepNumber, isActive: true },
     });
 
-    if (!step1) {
+    if (!step) {
       return NextResponse.json({ error: "Step 1 not found" }, { status: 404 });
     }
 

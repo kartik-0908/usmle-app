@@ -9,6 +9,7 @@ interface CreatePracticeSetRequest {
   name: string;
   description: string;
   maxQuestions: number;
+  step: string;
   filters: {
     systems: string[];
     disciplines: string[];
@@ -23,11 +24,11 @@ interface CreatePracticeSetRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('inside custom post route')
+    console.log("inside custom post route");
     const session = await auth.api.getSession({
       headers: await headers(), // you need to pass the headers object.
     });
-    const userId = session?.user?.id || '';
+    const userId = session?.user?.id || "";
 
     const body: CreatePracticeSetRequest = await request.json();
 
@@ -45,13 +46,14 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    const stepNumber = parseInt(body.step || "1");
 
     // Get Step 1 data
-    const step1 = await prisma.step.findUnique({
-      where: { stepNumber: 1, isActive: true },
+    const step = await prisma.step.findUnique({
+      where: { stepNumber: stepNumber, isActive: true },
     });
 
-    if (!step1) {
+    if (!step) {
       return NextResponse.json({ error: "Step 1 not found" }, { status: 404 });
     }
 
@@ -117,7 +119,7 @@ export async function POST(request: NextRequest) {
         UserQuestionState: {
           where: { userId },
           select: { isUsed: true, isMarked: true },
-        }
+        },
       },
     });
 
@@ -178,7 +180,7 @@ export async function POST(request: NextRequest) {
         name: body.name.trim(),
         description: body.description?.trim() || null,
         totalQuestions: shuffledQuestions.length,
-        userId: userId
+        userId: userId,
       },
     });
 
