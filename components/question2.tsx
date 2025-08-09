@@ -14,8 +14,6 @@ import {
   IconBookmark,
 } from "@tabler/icons-react";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
-
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
@@ -61,7 +59,6 @@ export function LatestQuestionPracticeScreen({
   prevQuesId,
   nextQuesId,
 }: QuestionPracticeScreenProps) {
-  const router = useRouter();
   const { setOpen } = useSidebar();
 
   const [selectedAnswer, setSelectedAnswer] = React.useState<string>("");
@@ -378,14 +375,14 @@ export function LatestQuestionPracticeScreen({
                   {isCorrect ? "Correct!" : "Incorrect"}
                 </span>
               </div>
-              {!isCorrect && (
+              {/* {!isCorrect && (
                 <p className="text-sm text-muted-foreground mb-2">
                   Correct answer:{" "}
                   <span className="font-semibold">
                     {question.correctAnswer}
                   </span>
                 </p>
-              )}
+              )} */}
             </div>
           </div>
         )}
