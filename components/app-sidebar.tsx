@@ -2,14 +2,18 @@
 
 import * as React from "react";
 import {
-  IconHelp,
-  IconInnerShadowTop,
-  IconSettings,
   IconPencil,
   IconGraph,
   IconBrandLine,
   IconHome,
+  IconBrandWhatsapp,
+  IconMessage,
 } from "@tabler/icons-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
@@ -24,6 +28,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Image from "next/image";
+import { FeedBack } from "./feedback";
 
 const data = {
   navMain: [
@@ -65,15 +70,22 @@ const data = {
   ],
 
   navSecondary: [
+    // {
+    //   title: "Settings",
+    //   url: "#",
+    //   icon: IconSettings,
+    // },
+    // {
+    //   title: "Get Help",
+    //   url: "#",
+    //   icon: IconHelp,
+    // },
     {
-      title: "Settings",
-      url: "#",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
+      title: "Join Whatsapp Group",
+      url: "https://chat.whatsapp.com/KQLaXNhJKEu2w0KqtEP5Cs",
+      icon: IconBrandWhatsapp,
+      isExternal: true,
+      color: "text-green-500",
     },
   ],
 };
@@ -89,8 +101,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="h-8 w-32 hover:bg-transparent"
             >
               {/* <a href="#"> */}
-                <Image src={'/logo-new.png'} alt="logo" width={512} height={32}></Image>
-                {/* <IconInnerShadowTop className="!size-5" />
+              <Image
+                src={"/logo-new.png"}
+                alt="logo"
+                width={512}
+                height={32}
+              ></Image>
+              {/* <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Step Genie</span> */}
               {/* </a> */}
             </SidebarMenuButton>
@@ -99,9 +116,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
+        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
+        <FeedBack />
         <NavUser />
       </SidebarFooter>
     </Sidebar>
