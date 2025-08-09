@@ -186,6 +186,8 @@ export function LatestQuestionPracticeScreen({
         qId: question.id,
         bookmark: !isBookmarked, // Toggle the bookmark state
       });
+      mutate(`/api/user/question/state/${question.id}`);
+
       // await bookmarkQuestion( questionId, !isBookmarked);
 
       // Optional: Show toast notification
