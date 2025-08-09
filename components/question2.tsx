@@ -27,6 +27,7 @@ import Link from "next/link";
 import axios from "axios";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { mutate } from "swr";
+import { useSidebar } from "./ui/sidebar";
 
 export const practiceQuestionSchema = z.object({
   id: z.string(), // Changed to string for cuid
@@ -61,6 +62,8 @@ export function LatestQuestionPracticeScreen({
   nextQuesId,
 }: QuestionPracticeScreenProps) {
   const router = useRouter();
+  const { setOpen } = useSidebar();
+
   const [selectedAnswer, setSelectedAnswer] = React.useState<string>("");
   const [showAnswer, setShowAnswer] = React.useState(false);
   const [isCorrect, setIsCorrect] = React.useState<boolean | null>(null);
@@ -86,6 +89,7 @@ export function LatestQuestionPracticeScreen({
     } catch (error) {
       console.log("Could not load layout preference");
     }
+    setOpen(false); // Close sidebar on mount
   }, []);
 
   // Save layout preference whenever it changes (only after mount)
